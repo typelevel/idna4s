@@ -34,6 +34,7 @@ lazy val commonSettings = Seq(
 
 lazy val root = tlCrossRootProject
   .aggregate(
+    bootstring,
     core,
     laws,
     scalacheck,
@@ -51,6 +52,34 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
       "org.typelevel" %%% "cats-core"        % V.catsV,
       "org.typelevel" %%% "cats-parse"       % V.catsParseV,
       "org.typelevel" %%% "literally"        % V.literallyV
+    ),
+    libraryDependencies ++= {
+      // Needed for macros
+      if (tlIsScala3.value) {
+        Nil
+      } else {
+        List("org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided)
+      }
+    },
+    console / initialCommands := {
+      List("cats.", "cats.syntax.all.", "cats.uri.", "cats.uri.syntax.all.")
+        .map(value => s"import ${value}${wildcardImport.value}")
+        .mkString("\n")
+    },
+    consoleQuick / initialCommands := ""
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) }
+  )
+
+lazy val bootstring = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("bootstring"))
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %%% "case-insensitive" % V.caseInsensitiveV,
+      "org.typelevel" %%% "cats-core"        % V.catsV
     ),
     libraryDependencies ++= {
       // Needed for macros
