@@ -90,7 +90,7 @@ lazy val bootstring = crossProject(JVMPlatform, JSPlatform)
       }
     },
     console / initialCommands := {
-      List("cats.", "cats.syntax.all.", "cats.uri.", "cats.uri.syntax.all.")
+      List("cats.", "cats.syntax.all.", "cats.bootstring.")
         .map(value => s"import ${value}${wildcardImport.value}")
         .mkString("\n")
     },
