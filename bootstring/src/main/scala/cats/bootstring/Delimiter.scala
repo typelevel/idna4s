@@ -1,12 +1,15 @@
 package cats.bootstring
 
+import cats.data._
+import cats.syntax.all._
+
 sealed abstract class Delimiter extends Product with Serializable {
   def codePoint: Int
 
   final def charString: String =
-    new String(Character.toChars(value))
+    new String(Character.toChars(codePoint))
 
-  override final def toString: String = s"Delimiter(codePoint = ${value}, charString = ${charString})"
+  override final def toString: String = s"Delimiter(codePoint = ${codePoint}, charString = ${charString})"
 }
 
 object Delimiter {
@@ -14,8 +17,8 @@ object Delimiter {
 
   val PunycodeDelimiter: Delimiter = fromChar('-')
 
-  def fromInt(codePoint: Int): Either[String, Delimiter] =
-    if (value >= 0 && value < 0x10ffff) {
+  def fromCodePoint(codePoint: Int): Either[String, Delimiter] =
+    if (codePoint >= 0 && value < 0x10ffff) {
       Right(DelimiterImp(codePoint))
     } else {
       Left(s"Not a valid Unicode code point: ${codePoint}")
@@ -24,17 +27,33 @@ object Delimiter {
   def fromChar(char: Char): Either[String, Delimiter] =
     char.toInt match {
       case value if value < Character.MIN_SURROGATE =>
-        fromInt(value)
+        fromCodePoint(value)
       case _ =>
         Left(s"Char is part of a surrogate pair, but that is not a valid code point in isolation: '${char}'")
     }
 
   def fromSurrogatePair(high: Char, low: Char): Either[NonEmptyList[String], Delimiter] =
-
+    (s"Character $high is not a high surrogate unicode character.".leftNel[String, Delimiter].unlessA(Character.isHighSurrogate(high)),
+      s"Character $low is not a low surrogate unicode character.".leftNel[String, Delimiter].unlessA(Character.isLowSurrogate(low))
+    ).mapN{
+      case _ => fromCodePoint(Character.toCodePoint(high, low))
+    }
 
   def unsafeFromCodePoint(value: Int): Delimiter =
-    fromInt(value).fold(
+    fromCodePoint(value).fold(
       e => throw new IllegalArgumentException(e),
+      identity
+    )
+
+  def unsafeFromChar(char: Char): Delimiter =
+    fromChar(char).fold(
+      e => throw new IllegalArgumentException(e),
+      identity
+    )
+
+  def unsafeFromSurrogatePair(high: Char, low: Char): Delimiter =
+    fromSurrogatePair(high, low).fold(
+      es => new IllegalArgumentException(es.mkString_(", ")),
       identity
     )
 }

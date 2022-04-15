@@ -1,8 +1,9 @@
-package cats.bootstring
+package  cats.bootstring
 
 import scala.annotation.tailrec
 import cats._
 import cats.syntax.all._
+import java.nio.IntBuffer
 import java.nio.ByteBuffer
 
 object Bootstring {
@@ -39,52 +40,73 @@ object Bootstring {
     value: String
   ): Either[String, String] = {
     val in: IntBuffer = codePoints(value)
-    val out: ByteBuffer = ???
-    val codePointIndexOfLastDelimiter: Option[Int] = lastIndexOf(in, delimiter)
+    val out: IntBuffer = ???
+    val codePointIndexOfLastDelimiter: Option[Int] = lastIndexOf(in, params.delimiter)
 
     @tailrec
-    def processBasicCodePoints(i: Int, codePointIndexOfLastDelimiter: Int): Unit =
-      if (i >= codePointIndexOfLastDelimiter) {
-        if (i == 0) {
-          // Special case where there are no basic code points, don't consume
-          // the delimiter.
-          ()
-        } else {
-          // Clear delimiter
-          in.get
-          ()
-        }
-      } else {
-        out.put(Character.toChars(in.get))
-        processBasicCodePoints(i + 1, codePointIndexOfLastDelimiter)
-      }
-
-    @tailrec
-    def consumeNonBasicCodePoints(i: Int, w: Int): Either[String, Unit] =
+    def baseLoop(k: Int, i: Int, w: Int, bias: Bias): (Int, Int) =
       if (in.hasRemaining) {
         val codePoint: Int = in.get
-        base.decodeDigit(codePoint).map{digit =>
-          val nexti: Int =
-            i + digit * w
-
-          if (nexti >= i) {
-            val t: Int =
-
+        val digit: Int = params.base.unsafeDecodeDigit(codePoint)
+        val nexti: Int =
+          java.lang.Math.addExact(i, java.lang.Math.multiplyExact(digit, w))
+        val t: Int =
+          if (k <= bias.value + params.tmin.value) {
+            params.tmin.value
+          } else if (k >= bias.value + params.tmax.value) {
+            params.tmax.value
           } else {
-            Left(s"Overflow during decoding.")
+            k - bias.value
           }
+        if (digit < t) {
+          (nexti, w)
+        } else {
+          val nextw: Int =
+            java.lang.Math.multiplyExact(w, java.lang.Math.addExact(params.base.value, -t))
+          baseLoop(k = k + params.base.value, i = nexti, w = nextw, bias)
         }
       } else {
-        Left("Expected at least one more code point while decoding non-basic section, but found none.")
+        throw new RuntimeException(s"Expected additional input, but input was empty.")
       }
 
     @tailrec
-    def processRest(n: Long, bias: Long) =
+    def processRest(n: Int, i: Int, bias: Bias, outLen: Int): String =
       if (in.hasRemaining) {
-        val oldi: Int = in.position
-        val w: Int = 1
+        val (nexti, nextw): (Int, Int) = baseLoop(k = params.base.value, i = i, w = 1, bias = bias)
+        val nextOutLen: Int = java.lang.Math.addExact(outLen, 1)
+        val nextBias: Bias = bias.unsafeAdapt(
+          params
+        )(
+          delta = nexti - i,
+          numpoints = nextOutLen,
+          firstTime = i === 0
+        )
+        val codePoint: Int = java.lang.Math.addExact(n, java.lang.Math.divideExact(nexti, nextOutLen))
+        val pos: Int = nexti % nextOutLen
+        if (params.basicCodepoints.contains(codePoint)) {
+          throw new RuntimeException(s"Encountered basic code point when only extended codepoint points are expected: ${codePoint}")
+        } else {
+          out.put(pos, codePoint)
+          processRest(codePoint, pos + 1, nextBias, nextOutLen)
+        }
+      } else {
+        out.flip
+        new String(out.array(), 0, outLen)
       }
 
+
+    try {
+      Right(codePointIndexOfLastDelimiter.fold(
+        processRest(params.initialN, 0, params.initialBias, 0)
+      ){codePointIndexOfLastDelimiter =>
+        out.put(in.array(), 0, codePointIndexOfLastDelimiter)
+        in.position(codePointIndexOfLastDelimiter + 1)
+        processRest(params.initialN, 0, params.initialBias, codePointIndexOfLastDelimiter)
+      })
+    } catch {
+      case e: Exception =>
+        Left(e.getLocalizedMessage)
+    }
   }
 
   // private[this] def encode[F[_]](

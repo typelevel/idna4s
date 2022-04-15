@@ -5,6 +5,18 @@ import scala.annotation.tailrec
 sealed abstract class Bias extends Product with Serializable {
   def value: Int
 
+  final def adapt(damp: Damp, base: Base, tmin: TMin, tmax: TMax, skew: Skew)(delta: Int, numpoints: Int, firstTime: Boolean): Either[String, Bias] =
+    Bias.adapt(damp, base, tmin, tmax, skew)(bias = this, delta = delta, numpoints = numpoints, firstTime = firstTime)
+
+  final def adapt(bootstringParams: BootstringParams)(delta: Int, numpoints: Int, firstTime: Boolean): Either[String, Bias] =
+    Bias.adapt(bootstringParams)(bias = this, delta = delta, numpoints = numpoints, firstTime = firstTime)
+
+  final def unsafeAdapt(bootstringParams: BootstringParams)(delta: Int, numpoints: Int, firstTime: Boolean): Bias =
+    Bias.unsafeAdapt(bootstringParams)(bias = this, delta = delta, numpoints = numpoints, firstTime = firstTime)
+
+  final def unsafeAdapt(damp: Damp, base: Base, tmin: TMin, tmax: TMax, skew: Skew)(delta: Int, numpoints: Int, firstTime: Boolean): Bias =
+    Bias.unsafeAdapt(damp, base, tmin, tmax, skew)(bias = this, delta = delta, numpoints = numpoints, firstTime = firstTime)
+
   override final def toString: String = s"Bias(value = ${value})"
 }
 
@@ -13,7 +25,21 @@ object Bias {
 
   val PunycodeInitialBias: Bias = unsafeInitialFromInt(72)
 
-  def adapt(bias: Bias, damp: Damp, base: Base, tmin: TMin, tmax: TMax, skew: Skew)(delta: Int, numpoints: Int, firstTime: Boolean): Either[String, Bias] = {
+  def adapt(bootstringParams: BootstringParams)(bias: Bias, delta: Int, numpoints: Int, firstTime: Boolean): Either[String, Bias] =
+    adapt(
+      damp = bootstringParams.damp,
+      base = bootstringParams.base,
+      tmin = bootstringParams.tmin,
+      tmax = bootstringParams.tmax,
+      skew = bootstringParams.skew
+    )(
+      bias = bias,
+      delta = delta,
+      numpoints = numpoints,
+      firstTime = firstTime
+    )
+
+  def adapt(damp: Damp, base: Base, tmin: TMin, tmax: TMax, skew: Skew)(bias: Bias, delta: Int, numpoints: Int, firstTime: Boolean): Either[String, Bias] = {
 
     @tailrec
     def loop(delta: Int, k: Int): (Int, Int) =
@@ -42,6 +68,18 @@ object Bias {
       Left(s"The number of encoded/decoded codepoints must be > 0 when adapting the bias, but was ${numpoints}")
     }
   }
+
+  def unsafeAdapt(bootstringParams: BootstringParams)(bias: Bias, delta: Int, numpoints: Int, firstTime: Boolean): Bias =
+    adapt(bootstringParams)(bias = bias, delta = delta, numpoints = numpoints, firstTime = firstTime).fold(
+      e => throw new IllegalArgumentException(e),
+      identity
+    )
+
+  def unsafeAdapt(damp: Damp, base: Base, tmin: TMin, tmax: TMax, skew: Skew)(bias: Bias, delta: Int, numpoints: Int, firstTime: Boolean): Bias =
+    adapt(damp, base, tmin, tmax, skew)(bias = bias, delta = delta, numpoints = numpoints, firstTime = firstTime).fold(
+      e => throw new IllegalArgumentException(e),
+      identity
+    )
 
   def initialFromInt(value: Int): Either[String, Bias] =
     if (value >= 0) {

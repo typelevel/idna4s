@@ -25,14 +25,14 @@ package object bootstring {
     loop(0)
   }
 
-  def lastIndexOf(value: IntBuffer, target: Int): Option[Int] = {
+  def lastIndexOf(value: IntBuffer, delimiter: Delimiter): Option[Int] = {
 
     @tailrec
     def loop(i: Int, out: Option[Int]): Option[Int] =
       if (i >= value.remaining) {
         out
       } else {
-        if (value.get(i) == target) {
+        if (value.get(i) == delimiter.codePoint) {
           loop(i + 1, Some(i))
         } else {
           loop(i + 1, out)

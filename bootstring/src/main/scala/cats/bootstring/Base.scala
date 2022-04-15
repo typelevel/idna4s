@@ -6,6 +6,9 @@ sealed abstract class Base extends Product with Serializable {
   final def decodeDigit(codePoint: Int): Either[String, Int] =
     Base.decodeDigit(this)(codePoint)
 
+  final def unsafeDecodeDigit(codePoint: Int): Int =
+    Base.unsafeDecodeDigit(this)(codePoint)
+
   override final def toString: String = s"Base(value = ${value})"
 }
 
