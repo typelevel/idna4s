@@ -42,7 +42,7 @@ object BootstringParams {
     (0x61 to 0x7A).toList.foldMap((value: Int) => BitSet(value)) ++
     (0x30 to 0x39).toList.foldMap((value: Int) => BitSet(value))
 
-  val punycodeParams: BootstringParams =
+  val PunycodeParams: BootstringParams =
     unsafeFrom(
       PunycodeCodePoints,
       Base.PunycodeBase,
@@ -58,6 +58,7 @@ object BootstringParams {
   def apply(
     basicCodepoints: BitSet,
     base: Base,
+    delimiter: Delimiter,
     tmin: TMin,
     tmax: TMax,
     skew: Skew,
@@ -72,6 +73,7 @@ object BootstringParams {
         BootstringParamsImpl(
           basicCodepoints,
           base,
+          delimiter,
           tmin,
           tmax,
           skew,
@@ -84,6 +86,7 @@ object BootstringParams {
   def unsafeFrom(
     basicCodepoints: BitSet,
     base: Base,
+    delimiter: Delimiter,
     tmin: TMin,
     tmax: TMax,
     skew: Skew,
@@ -94,6 +97,7 @@ object BootstringParams {
     apply(
       basicCodepoints,
       base,
+      delimiter,
       tmin,
       tmax,
       skew,

@@ -7,7 +7,7 @@ import scala.annotation.tailrec
 package object bootstring {
   def codePoints(value: String): IntBuffer = {
     val len: Int = value.length
-    val out: IntBuffer = IntBuffer.allocate(len * 2)
+    val out: IntBuffer = IntBuffer.allocate(len)
 
     @tailrec
     def loop(index: Int): IntBuffer =

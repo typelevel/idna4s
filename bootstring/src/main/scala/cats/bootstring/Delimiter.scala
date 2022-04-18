@@ -15,11 +15,11 @@ sealed abstract class Delimiter extends Product with Serializable {
 object Delimiter {
   private[this] final case class DelimiterImpl(override val codePoint: Int) extends Delimiter
 
-  val PunycodeDelimiter: Delimiter = fromChar('-')
+  val PunycodeDelimiter: Delimiter = unsafeFromChar('-')
 
   def fromCodePoint(codePoint: Int): Either[String, Delimiter] =
-    if (codePoint >= 0 && value < 0x10ffff) {
-      Right(DelimiterImp(codePoint))
+    if (codePoint >= 0 && codePoint < 0x10ffff) {
+      Right(DelimiterImpl(codePoint))
     } else {
       Left(s"Not a valid Unicode code point: ${codePoint}")
     }
@@ -33,10 +33,10 @@ object Delimiter {
     }
 
   def fromSurrogatePair(high: Char, low: Char): Either[NonEmptyList[String], Delimiter] =
-    (s"Character $high is not a high surrogate unicode character.".leftNel[String, Delimiter].unlessA(Character.isHighSurrogate(high)),
-      s"Character $low is not a low surrogate unicode character.".leftNel[String, Delimiter].unlessA(Character.isLowSurrogate(low))
-    ).mapN{
-      case _ => fromCodePoint(Character.toCodePoint(high, low))
+    (s"Character $high is not a high surrogate unicode character.".leftNel[Delimiter].unlessA(Character.isHighSurrogate(high)),
+      s"Character $low is not a low surrogate unicode character.".leftNel[Delimiter].unlessA(Character.isLowSurrogate(low))
+    ).parTupled.flatMap{
+      case _ => fromCodePoint(Character.toCodePoint(high, low)).leftMap(NonEmptyList.one)
     }
 
   def unsafeFromCodePoint(value: Int): Delimiter =
@@ -53,7 +53,7 @@ object Delimiter {
 
   def unsafeFromSurrogatePair(high: Char, low: Char): Delimiter =
     fromSurrogatePair(high, low).fold(
-      es => new IllegalArgumentException(es.mkString_(", ")),
+      es => throw new IllegalArgumentException(es.mkString_(", ")),
       identity
     )
 }

@@ -3,11 +3,44 @@ package cats.bootstring
 sealed abstract class Base extends Product with Serializable {
   def value: Int
 
+  private val lowercaseCharCodePoints: Array[Int] =
+    Base.lowercaseCharList.take(value).map(_.toInt).toArray
+
+  private val uppercaseCharCodePoints: Array[Int] =
+    Base.uppercaseCharList.take(value).map(_.toInt).toArray
+
   final def decodeDigit(codePoint: Int): Either[String, Int] =
-    Base.decodeDigit(this)(codePoint)
+    Base.codePointToIntegralValue(codePoint).flatMap{
+      case digit if digit >= value =>
+        Left(s"Value exceeds digit in the given base, value: ${digit}, base: ${this}")
+      case digit =>
+        Right(digit)
+    }
 
   final def unsafeDecodeDigit(codePoint: Int): Int =
-    Base.unsafeDecodeDigit(this)(codePoint)
+    decodeDigit(codePoint).fold(
+      e => throw new IllegalArgumentException(e),
+      identity
+    )
+
+  final def encodeToDigitCodePoint(digit: Int, uppercase: Boolean = false): Either[String, Int] =
+    if (digit < value && digit >= 0) {
+      Right(
+        if (uppercase) {
+          uppercaseCharCodePoints(digit)
+        } else {
+          lowercaseCharCodePoints(digit)
+        }
+      )
+    } else {
+      Left(s"Integral value ${digit}, is not in the domain of base $this")
+    }
+
+  final def unsafeEncodeToDigitCodePoint(digit: Int, uppercase: Boolean = false): Int =
+    encodeToDigitCodePoint(digit, uppercase).fold(
+      e => throw new IllegalArgumentException(e),
+      identity
+    )
 
   override final def toString: String = s"Base(value = ${value})"
 }
@@ -15,33 +48,25 @@ sealed abstract class Base extends Product with Serializable {
 object Base {
   private[this] final case class BaseImpl(override val value: Int) extends Base
 
-  private[this] def codePointToIntegralValue(value: Int): Either[String, Int] =
+  private def codePointToIntegralValue(value: Int): Either[String, Int] =
     if (value >= 48 && value <= 57) {
       Right(value - 48)
     } else if (value >= 65 && value <= 90) {
       Right(value - 55)
     } else if (value >= 97 && value <= 122) {
-      Right(value - 87)
+      Right(value - 97)
     } else {
       Left(s"Code point value does not corrispond to any know base encoding: $value")
     }
 
+  private val lowercaseCharList: List[Char] =
+    (Range.inclusive('0', '9') ++ Range.inclusive('a', 'z')).toList.map(_.toChar)
+
+  private val uppercaseCharList: List[Char] =
+    (Range.inclusive('0', '9') ++ Range.inclusive('A', 'Z')).toList.map(_.toChar)
+
   val PunycodeBase: Base =
     Base.unsafeFromInt(36)
-
-  def decodeDigit(base: Base)(codePoint: Int): Either[String, Int] =
-    codePointToIntegralValue(codePoint).flatMap{
-      case value if value >= base.value =>
-        Left(s"Value exceeds digit in the given base, value: ${value}, base: ${base}")
-      case value =>
-        Right(value)
-    }
-
-  final def unsafeDecodeDigit(base: Base)(codePoint: Int): Int =
-    decodeDigit(base)(codePoint).fold(
-      e => throw new IllegalArgumentException(e),
-      identity
-    )
 
   def fromInt(value: Int): Either[String, Base] =
     if (value > 0 && value < 37) {
