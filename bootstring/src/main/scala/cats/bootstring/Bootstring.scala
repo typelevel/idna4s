@@ -41,7 +41,7 @@ object Bootstring {
   )(
     value: String
   ): Either[String, String] = {
-    val in: IntBuffer = codePoints(value)
+    val in: IntBuffer = codePointsAsBuffer(value)
     val out: IntBuffer = IntBuffer.allocate(in.capacity)
     val codePointIndexOfLastDelimiter: Option[Int] = lastIndexOf(in, params.delimiter)
 
@@ -117,102 +117,195 @@ object Bootstring {
     }
   }
 
+  // def encode(
+  //   params: BootstringParams
+  // )(
+  //   value: String
+  // ): Either[String, String] = {
+  //   val in: IntBuffer = codePoints(value)
+  //   val out: IntBuffer = ???
+
+  //   @tailrec
+  //   def copyBasicCodePointsToOutput(nonBasicCodePoints: SortedSet[Int], count: Int): (SortedSet[Int], Int) =
+  //     if (in.hasRemaining) {
+  //       val codePoint: Int = in.get
+  //       if (params.basicCodepoints.contains(codePoint)) {
+  //         out.put(codePoint)
+  //         copyBasicCodePointsToOutput(nonBasicCodePoints, count + 1)
+  //       } else if (codePoint >= params.initialN) {
+  //         copyBasicCodePointsToOutput(nonBasicCodePoints + codePoint, count)
+  //       } else {
+  //         throw new RuntimeException(s"Input contains a non-basic codepoint < than the initial N value. This is not valid. CodePoint: ${codePoint}, Initial N: ${params.initialN}")
+  //       }
+  //     } else {
+  //       in.rewind
+  //       if (count > 0) {
+  //         out.put(params.delimiter.codePoint)
+  //         count
+  //       } else {
+  //         count
+  //       }
+  //     }
+
+  //   @tailrec
+  //   def innerLoop1(k: Int, bias: Bias, q: Int): Int = {
+  //     val t: Int =
+  //       if (k <= bias.value) {
+  //         params.TMin.value
+  //       } else if (k >= (bias.value + params.TMax.value)) {
+  //         params.TMax.value
+  //       } else {
+  //         k - bias.value
+  //       }
+
+  //     if (q < t) {
+  //       q
+  //     } else {
+  //       out.put(params.base.unsafeEncodeToDigitCodePoint(t + ((q - t) % (params.base.value - t))))
+  //       innerLoop1(k = k + params.base.value, bias = bias, q = (q - t)/(params.base.value - t))
+  //     }
+  //   }
+
+  //   @tailrec
+  //   def innerLoop0(cursor: Int, delta: Int, n: Int, bias: Bias, h: Int, numberOfBasicCodePoints: Int): (Bias, Int) = {
+  //     if (cursor > in.limit) {
+  //       (bias, h)
+  //     } else {
+  //       val codePoint: Int = in.get(cursor)
+  //       val nextDelta: Int =
+  //         if (codePoint < n || params.basicCodepoints.contains(codePoint)) {
+  //           Math.addExact(delta, 1)
+  //         } else {
+  //           delta
+  //         }
+  //       if (codePoint === n) {
+  //         out.put(params.base.unsafeEncodeToDigitCodePoint(innerLoop1(k = params.base.value, bias = bias, nextDelta)))
+  //         val nextBias: Bias =
+  //           bias.adapt(params)(delta = nextDelta, numpoints = h + 1, h === numberOfBasicCodePoints)
+  //         innerLoop0(cursor = cursor + 1, delta = 0, n = n, bias = nextBias, h = h + 1, numberOfBasicCodePoints = numberOfBasicCodePoints)
+  //       } else {
+  //         innerLoop0(cursor = cursor + 1, delta = nextDelta, n = n, bias = bias, h = h, numberOfBasicCodePoints = numberOfBasicCodePoints)
+  //       }
+  //     }
+  //   }
+
+  //   @tailrec
+  //   def outerLoop(h: Int, delta: Int, n: Int, bias: Bias, nonBasicCodePoints: SortedSet[Int], numberOfBasicCodePoints: Int): String =
+  //     if (h < in.limit) {
+  //       nonBasicCodePoints.dropWhile(_ < n) match {
+  //         case nonBasicCodePoints =>
+  //           nonBasicCodePoints.headOption match {
+  //             case Some(m) =>
+  //               Math.addExact(delta, Math.multiplyExact(Math.subtractExact(m, n), Math.addExact(h, 1))) match {
+  //                 case delta =>
+  //                   val (nextBias, nextH) = innerLoop0(cursor = 0, delta = delta, n = m, bias = bias, h = h, numberOfBasicCodePoints)
+
+  //               }
+  //             case _ =>
+  //               throw new RuntimeException(s"There are no more non-basic code points >= the current n value: ${n}")
+  //           }
+  //       }
+  //     } else {
+  //       val position: Int = out.position()
+  //       out.flip
+  //       new String(out.array, 0, position)
+  //     }
+
+  //   try {
+  //     val basicCodePointCount: Int = copyBasicCodePointsToOutput(0)
+  //   } catch {
+  //     case e: Exception =>
+  //       Left(e.getLocalizedMessage)
+  //   }
+  // }
+
   def encode(
     params: BootstringParams
   )(
     value: String
   ): Either[String, String] = {
-    val in: IntBuffer = codePoints(value)
-    val out: IntBuffer = ???
+    val in: Chain[Int] = codePointsAsChain(value)
+    val len: Int = in.length
 
     @tailrec
-    def copyBasicCodePointsToOutput(nonBasicCodePoints: SortedSet[Int], count: Int): (SortedSet[Int], Int) =
-      if (in.hasRemaining) {
-        val codePoint: Int = in.get
-        if (params.basicCodepoints.contains(codePoint)) {
-          out.put(codePoint)
-          copyBasicCodePointsToOutput(nonBasicCodePoints, count + 1)
-        } else if (codePoint >= params.initialN) {
-          copyBasicCodePointsToOutput(nonBasicCodePoints + codePoint, count)
-        } else {
-          throw new RuntimeException(s"Input contains a non-basic codepoint < than the initial N value. This is not valid. CodePoint: ${codePoint}, Initial N: ${params.initialN}")
-        }
-      } else {
-        in.rewind
-        if (count > 0) {
-          out.put(params.delimiter.codePoint)
-          count
-        } else {
-          count
-        }
+    def outputBasicCodePoints(in: Chain[Int], basicCodePointCount: Int, nonBasicCodePoints: SortedSet[Int], out: Chain[Int]): (SortedSet[Int], Int, Chain[Int]) =
+      in match {
+        case x ==: xs =>
+          if (params.basicCodepoints.contains(x)) {
+            outputBasicCodePoints(xs, basicCodePointCount + 1, nonBasicCodePoints, out :+ x)
+          } else if (x < params.initialN) {
+            throw new RuntimeException(s"Intput contains a non-basic code point which is less than the initial N value. This is illegal. Code Point: ${x}, Initial N: ${params.initialN}.")
+          } else {
+            outputBasicCodePoints(xs, basicCodePointCount, nonBasicCodePoints + x, out)
+          }
+        case _ =>
+          if (basicCodePointCount > 0) {
+            (nonBasicCodePointSet, basicCodePointCount, out :+ params.delimiter.codePoint)
+          } else {
+            (nonBasicCodePointSet, basicCodePointCount, out)
+          }
       }
 
     @tailrec
-    def innerLoop1(k: Int, bias: Bias, q: Int): Int = {
-      val t: Int =
-        if (k <= bias.value) {
-          params.TMin.value
-        } else if (k >= (bias.value + params.TMax.value)) {
-          params.TMax.value
-        } else {
-          k - bias.value
-        }
+    def encodeCodePoint(k: Int, bias: Bias, q: Int, out: Chain[Int]): Chain[Int] = {
+      val t: Int = if (k <= bias.value) {
+        params.TMin.value
+      } else if (k >= bias.value + params.TMax.value) {
+        params.TMax.value
+      } else {
+        k - bias.value
+      }
 
       if (q < t) {
-        q
+        out :+ params.unsafeEncodeToDigitCodePoint(q)
       } else {
-        out.put(params.base.unsafeEncodeToDigitCodePoint(t + ((q - t) % (params.base.value - t))))
-        innerLoop1(k = k + params.base.value, bias = bias, q = (q - t)/(params.base.value - t))
+        val qt: Int = q - t
+        val bt: Int = params.base.value - t
+        out :+ (t + (qt % bt))
+        encodeCodePoint(k = k + params.base.value, bias = bias, q = qt / bt, out)
       }
     }
-
-    @tailrec
-    def innerLoop0(cursor: Int, delta: Int, n: Int, bias: Bias, h: Int, numberOfBasicCodePoints: Int): (Bias, Int) = {
-      if (cursor > in.limit) {
-        (bias, h)
-      } else {
-        val codePoint: Int = in.get(cursor)
-        val nextDelta: Int =
-          if (codePoint < n || params.basicCodepoints.contains(codePoint)) {
-            Math.addExact(delta, 1)
-          } else {
-            delta
-          }
-        if (codePoint === n) {
-          out.put(params.base.unsafeEncodeToDigitCodePoint(innerLoop1(k = params.base.value, bias = bias, nextDelta)))
-          val nextBias: Bias =
-            bias.adapt(params)(delta = nextDelta, numpoints = h + 1, h === numberOfBasicCodePoints)
-          innerLoop0(cursor = cursor + 1, delta = 0, n = n, bias = nextBias, h = h + 1, numberOfBasicCodePoints = numberOfBasicCodePoints)
-        } else {
-          innerLoop0(cursor = cursor + 1, delta = nextDelta, n = n, bias = bias, h = h, numberOfBasicCodePoints = numberOfBasicCodePoints)
-        }
-      }
-    }
-
-    @tailrec
-    def outerLoop(h: Int, delta: Int, n: Int, bias: Bias, nonBasicCodePoints: SortedSet[Int], numberOfBasicCodePoints: Int): String =
-      if (h < in.limit) {
-        nonBasicCodePoints.dropWhile(_ < n) match {
-          case nonBasicCodePoints =>
-            nonBasicCodePoints.headOption match {
-              case Some(m) =>
-                Math.addExact(delta, Math.multiplyExact(Math.subtractExact(m, n), Math.addExact(h, 1))) match {
-                  case delta =>
-                    val (nextBias, nextH) = innerLoop0(cursor = 0, delta = delta, n = m, bias = bias, h = h, numberOfBasicCodePoints)
-
-                }
-              case _ =>
-                throw new RuntimeException(s"There are no more non-basic code points >= the current n value: ${n}")
-            }
-        }
-      } else {
-        val position: Int = out.position()
-        out.flip
-        new String(out.array, 0, position)
-      }
 
     try {
-      val basicCodePointCount: Int = copyBasicCodePointsToOutput(0)
+      outputBasicCodePoints(in, 0, SortedSet.empty[Int]) match {
+        case (nonBasicCodePointSet, basicCodePointCount, out) =>
+          nonBasicCodePointSet.foldLeft((params.initialN, 0, basicCodePointCount, out)){
+            case ((n, delta, inputCodePointsEmitted, out), codePointLevel) =>
+              if (n < codePointLevel) {
+                // TODO: Remove once I'm sure this is correct.
+                throw new AssertionError(s"n < codePointLevel. This should not be possible. ${n} < ${codePointLevel}.")
+              } else {
+                Math.addExact(delta, Math.multiplyExact(Math.subtractExact(codePointLevel, n), Math.addExact(inputCodePointsEmitted, 1))) match {
+                  case delta =>
+                      in.foldLeft((delta, bias, inputCodePointsEmitted, out)){
+                        case ((delta, bias, inputCodePointsEmitted, out), codePoint) =>
+                          if (codePoint < delta) {
+                            (Math.addExact(delta, 1), bias, inputCodePointsEmitted, out)
+                          } else if (codePoint > delta) {
+                            // TODO: Remove once I'm sure this is correct.
+                            throw new AssertionError(s"codePoint > delta, this should not be possible. $codePoint > $delta")
+                          } else {
+                            // codePoint == delta
+                            encodeCodePoint(k = params.base.value, bias = bias, q = delta, out = out) match {
+                              case out =>
+                                (0, bias.adapt(delta = delta, numpoints = inputCodePointsEmitted + 1, firstTime = inputCodePointsEmitted === 0), inputCodePointsEmitted + 1, out)
+                            }
+                          }
+                      } match {
+                        case (delta, bias, inputCodePointsEmitted, out) =>
+                          (n + 1, delta + 1, inputCodePointsEmitted, out)
+                      }
+                }
+              }
+          }
+      } match {
+        case (_, _, emittedCodePoints, out) =>
+          if (emittedCodePoints =!= len) {
+            throw new AssertionError(s"emittedCodePoints =!= len: $emittedCodePoints =!= $len")
+          } else {
+            Right(new String(out.toList.toArray, 0, out.length))
+          }
+      }
     } catch {
       case e: Exception =>
         Left(e.getLocalizedMessage)

@@ -1,29 +1,39 @@
 package cats
 
+import cats.data._
 import java.nio.CharBuffer
 import java.nio.IntBuffer
 import scala.annotation.tailrec
 
 package object bootstring {
-  def codePoints(value: String): IntBuffer = {
+  def foldLeftCodePoints[A](value: String)(base: A)(f: (A, Int) => A): A = {
     val len: Int = value.length
-    val out: IntBuffer = IntBuffer.allocate(len)
 
     @tailrec
-    def loop(index: Int): IntBuffer =
+    def loop(index: Int, acc: A): A =
       if (index >= len) {
-        out.flip
-        out
+        acc
       } else {
         val codePoint: Int = value.codePointAt(index)
         val indexIncrement: Int = if (codePoint >= 0x10000) 2 else 1
 
-        out.put(codePoint)
-        loop(index + indexIncrement)
+        loop(index + indexIncrement, f(acc, codePoint))
       }
 
-    loop(0)
+    loop(0, base)
   }
+
+  def codePointsAsChain(value: String): Chain[Int] =
+    foldLeftCodePoints(value)(Chain.empty[Int]){
+      case (acc, value) =>
+        acc :+ value
+    }
+
+  def codePointsAsBuffer(value: String): IntBuffer =
+    foldLeftCodePoints(value)(IntBuffer.allocate(value.length)){
+      case (acc, value) =>
+        acc.put(value)
+    }
 
   def lastIndexOf(value: IntBuffer, delimiter: Delimiter): Option[Int] = {
 
