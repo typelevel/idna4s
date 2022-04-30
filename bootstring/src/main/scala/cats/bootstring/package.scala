@@ -71,7 +71,4 @@ package object bootstring {
 
     loop
   }
-
-  def toAndFromCodePoints(value: String): Either[String, String] =
-    stringFromCodePoints(codePoints(value))
 }

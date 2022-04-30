@@ -5,7 +5,7 @@ import cats.syntax.all._
 import scala.collection.immutable.BitSet
 
 sealed abstract class BootstringParams extends Product with Serializable {
-  def basicCodepoints: BitSet
+  def isBasicCodePoint: Int => Boolean
   def base: Base
   def delimiter: Delimiter
   def tmin: TMin
@@ -16,14 +16,14 @@ sealed abstract class BootstringParams extends Product with Serializable {
   def initialN: Int
 
   override final def toString: String =
-    s"BootstringParams(basicCodepoints = ${basicCodepoints}, base = ${base}, delimiter = ${delimiter}, tmin = ${tmin}, tmax = ${tmax}, skew = ${skew}, damp = ${damp}, initialBias = ${initialBias}, initialN = ${initialN})"
+    s"BootstringParams(base = ${base}, delimiter = ${delimiter}, tmin = ${tmin}, tmax = ${tmax}, skew = ${skew}, damp = ${damp}, initialBias = ${initialBias}, initialN = ${initialN})"
 
 
 }
 
 object BootstringParams {
   private[this] final case class BootstringParamsImpl(
-    override val basicCodepoints: BitSet,
+    override val isBasicCodePoint: Int => Boolean,
     override val base: Base,
     override val delimiter: Delimiter,
     override val tmin: TMin,
@@ -34,29 +34,20 @@ object BootstringParams {
     override val initialN: Int
   ) extends BootstringParams
 
-  private[this] val punycodeBasicCodePoints: BitSet =
-    (0 to 0x7F).toList.foldMap(value => BitSet(value))
-
-  private val PunycodeCodePoints: BitSet =
-    (0x41 to 0x51).toList.foldMap((value: Int) => BitSet(value)) ++
-    (0x61 to 0x7A).toList.foldMap((value: Int) => BitSet(value)) ++
-    (0x30 to 0x39).toList.foldMap((value: Int) => BitSet(value))
-
   val PunycodeParams: BootstringParams =
     unsafeFrom(
-      PunycodeCodePoints,
+      0x7F,
       Base.PunycodeBase,
       Delimiter.PunycodeDelimiter,
       TMin.PunycodeTMin,
       TMax.PunycodeTMax,
       Skew.PunycodeSkew,
       Damp.PunycodeDamp,
-      Bias.PunycodeInitialBias,
-      128
+      Bias.PunycodeInitialBias
     )
 
   def apply(
-    basicCodepoints: BitSet,
+    isBasicCodePoint: Int => Boolean,
     base: Base,
     delimiter: Delimiter,
     tmin: TMin,
@@ -71,7 +62,7 @@ object BootstringParams {
     ).parMapN{
       case _ =>
         BootstringParamsImpl(
-          basicCodepoints,
+          isBasicCodePoint,
           base,
           delimiter,
           tmin,
@@ -83,8 +74,34 @@ object BootstringParams {
         )
     }
 
+  def apply(
+    maxBasicCodePoint: Int,
+    base: Base,
+    delimiter: Delimiter,
+    tmin: TMin,
+    tmax: TMax,
+    skew: Skew,
+    damp: Damp,
+    initialBias: Bias
+  ): Either[NonEmptyList[String], BootstringParams] =
+    if (maxBasicCodePoint < Character.MAX_CODE_POINT && maxBasicCodePoint >= 0) {
+      apply(
+        (codePoint: Int) => codePoint <= maxBasicCodePoint && codePoint >= 0,
+        base,
+        delimiter,
+        tmin,
+        tmax,
+        skew,
+        damp,
+        initialBias,
+        maxBasicCodePoint + 1
+      )
+    } else {
+      s"The maximum basic code point must be >= 0 and < Character.MAX_CODE_POINT: ${maxBasicCodePoint}".leftNel[BootstringParams]
+    }
+
   def unsafeFrom(
-    basicCodepoints: BitSet,
+    isBasicCodePoint: Int => Boolean,
     base: Base,
     delimiter: Delimiter,
     tmin: TMin,
@@ -95,7 +112,7 @@ object BootstringParams {
     initialN: Int
   ): BootstringParams =
     apply(
-      basicCodepoints,
+      isBasicCodePoint,
       base,
       delimiter,
       tmin,
@@ -104,6 +121,30 @@ object BootstringParams {
       damp,
       initialBias,
       initialN
+    ).fold(
+      errors => throw new IllegalArgumentException(s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(", ")}"""),
+      identity
+    )
+
+  def unsafeFrom(
+    maxBasicCodePoint: Int,
+    base: Base,
+    delimiter: Delimiter,
+    tmin: TMin,
+    tmax: TMax,
+    skew: Skew,
+    damp: Damp,
+    initialBias: Bias
+  ): BootstringParams =
+    apply(
+      maxBasicCodePoint,
+      base,
+      delimiter,
+      tmin,
+      tmax,
+      skew,
+      damp,
+      initialBias
     ).fold(
       errors => throw new IllegalArgumentException(s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(", ")}"""),
       identity

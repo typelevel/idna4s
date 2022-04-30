@@ -53,7 +53,7 @@ object Bias {
     if (numpoints > 0) {
       val delta0: Int =
         if (firstTime) {
-          delta / numpoints
+          delta / damp.value
         } else {
           delta / 2
         }

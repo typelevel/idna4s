@@ -1,43 +1,20 @@
 package cats.bootstring
 
-sealed abstract class Base extends Product with Serializable {
+sealed abstract class Base extends Serializable {
   def value: Int
 
-  private val lowercaseCharCodePoints: Array[Int] =
-    Base.lowercaseCharList.take(value).map(_.toInt).toArray
+  def digitToCodePoint(digit: Int, uppercase: Boolean = false): Either[String, Int]
 
-  private val uppercaseCharCodePoints: Array[Int] =
-    Base.uppercaseCharList.take(value).map(_.toInt).toArray
+  def codePointToDigit(codePoint: Int): Either[String, Int]
 
-  final def decodeDigit(codePoint: Int): Either[String, Int] =
-    Base.codePointToIntegralValue(codePoint).flatMap{
-      case digit if digit >= value =>
-        Left(s"Value exceeds digit in the given base, value: ${digit}, base: ${this}")
-      case digit =>
-        Right(digit)
-    }
-
-  final def unsafeDecodeDigit(codePoint: Int): Int =
-    decodeDigit(codePoint).fold(
+  final def unsafeDigitToCodePoint(digit: Int, uppercase: Boolean = false): Int =
+    digitToCodePoint(digit, uppercase).fold(
       e => throw new IllegalArgumentException(e),
       identity
     )
 
-  final def encodeToDigitCodePoint(digit: Int, uppercase: Boolean = false): Either[String, Int] =
-    if (digit < value && digit >= 0) {
-      Right(
-        if (uppercase) {
-          uppercaseCharCodePoints(digit)
-        } else {
-          lowercaseCharCodePoints(digit)
-        }
-      )
-    } else {
-      Left(s"Integral value ${digit}, is not in the domain of base $this")
-    }
-
-  final def unsafeEncodeToDigitCodePoint(digit: Int, uppercase: Boolean = false): Int =
-    encodeToDigitCodePoint(digit, uppercase).fold(
+  final def unsafeCodePointToDigit(codePoint: Int): Int =
+    codePointToDigit(codePoint).fold(
       e => throw new IllegalArgumentException(e),
       identity
     )
@@ -46,8 +23,6 @@ sealed abstract class Base extends Product with Serializable {
 }
 
 object Base {
-  private[this] final case class BaseImpl(override val value: Int) extends Base
-
   private def codePointToIntegralValue(value: Int): Either[String, Int] =
     if (value >= 48 && value <= 57) {
       Right(value - 48)
@@ -59,28 +34,72 @@ object Base {
       Left(s"Code point value does not corrispond to any know base encoding: $value")
     }
 
-  private val lowercaseCharList: List[Char] =
-    (Range.inclusive('0', '9') ++ Range.inclusive('a', 'z')).toList.map(_.toChar)
 
-  private val uppercaseCharList: List[Char] =
-    (Range.inclusive('0', '9') ++ Range.inclusive('A', 'Z')).toList.map(_.toChar)
 
-  val PunycodeBase: Base =
-    Base.unsafeFromInt(36)
+  val PunycodeBase: Base = {
+    val lowercaseChars: Array[Char] =
+      (Range.inclusive('a', 'z') ++ Range.inclusive('0', '9')).toList.map(_.toChar).toArray
 
-  def fromInt(value: Int): Either[String, Base] =
-    if (value > 0 && value < 37) {
-      Right(BaseImpl(value))
-    } else {
-      if (value <= 0) {
-        Left(s"According to RFC-3492 base values must be > 0.")
+    val uppercaseChars: Array[Char] =
+      (Range.inclusive('A', 'Z') ++ Range.inclusive('0', '9')).toList.map(_.toChar).toArray
+
+    def digitToCodePoint(digit: Int, uppercase: Boolean): Either[String, Int] =
+      if (digit <= 36 && digit >= 0) {
+        Right(if (uppercase) {
+          uppercaseChars(digit)
+        } else {
+          lowercaseChars(digit)
+        })
       } else {
-        Left(s"Base values > 36 are not supported as we don't have an obvious set of characters to used for digits > than Z.")
+        Left(s"Digit must be >= 0 and <= 36")
       }
+
+    def codePointToDigit(codePoint: Int): Either[String, Int] =
+      if (codePoint >= 'A'.toInt && codePoint <= 'Z'.toInt) {
+        // A-Z
+        Right(codePoint - 'A'.toInt)
+      } else if (codePoint >= 'a'.toInt && codePoint <= 'z'.toInt) {
+        // a-z
+        Right(codePoint - 'z'.toInt)
+      } else if (codePoint >= '0'.toInt && codePoint <= '9'.toInt) {
+        // 0-9
+        Right(codePoint - 22)
+      } else {
+        Left(s"Code point $codePoint is valid for the given base.")
+      }
+
+    unsafeOf(36, digitToCodePoint, codePointToDigit)
+  }
+
+  def of(
+    baseValue: Int,
+    digitToCodePointF: (Int, Boolean) => Either[String, Int],
+    codePointToDigitF: Int => Either[String, Int]
+  ): Either[String, Base] =
+    if (baseValue > 0) {
+      Right(
+        new Base {
+          override val value: Int = baseValue
+
+          override final def digitToCodePoint(digit: Int, uppercase: Boolean = false): Either[String, Int] =
+            digitToCodePointF(digit, uppercase)
+
+          override final def codePointToDigit(codePoint: Int): Either[String, Int] =
+            codePointToDigitF(codePoint)
+        }
+      )
+    } else {
+      Left(s"According to RFC-3492 base values must be > 0.")
     }
 
-  def unsafeFromInt(value: Int): Base =
-    fromInt(value).fold(
+  def unsafeOf(
+    baseValue: Int,
+    digitToCodePointF: (Int, Boolean) => Either[String, Int],
+    codePointToDigitF: Int => Either[String, Int]
+  ): Base =
+    of(
+      baseValue, digitToCodePointF, codePointToDigitF
+    ).fold(
       e => throw new IllegalArgumentException(e),
       identity
     )
