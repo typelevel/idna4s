@@ -12,30 +12,66 @@ import java.lang.Math
 
 object Bootstring {
 
+  private val HalfIntMaxValue: Int = Int.MaxValue/2
+
+  /** Calculate the a new size for an `IntBuffer` so that it can accept at
+    * ''least'' the given new capacity.
+    *
+    * If the buffer is already at or exceeding the required size, then the
+    * buffer's current size is returned. Otherwise attempt to double the
+    * buffer's size as long as that won't overflow. If we can not double it,
+    * add `neededSize - remaining` to the current capacity. In the
+    * unbelievable case where `buffer.remaining + neededSize > Int.MaxValue`,
+    * then yield an error.
+    */
   @inline
-  private def insertCodePoint(buffer: IntBuffer, codePoint: Int): IntBuffer =
-    if (buffer.hasRemaining) {
-      buffer.put(codePoint)
+  private def calculateNewSize(buffer: IntBuffer, neededSize: Int): Int =
+    if (buffer.remaining >= neededSize) {
+      // This will be the branch most often hit by a wide margin.
+      buffer.capacity
+    } else if (buffer.capacity <= HalfIntMaxValue && buffer.capacity + buffer.remaining >= neededSize) {
+      // Double it
+      buffer.capacity * 2
+    } else if (neededSize.toLong - buffer.remaining.toLong <= Int.MaxValue.toLong){
+      // I do not expect this branch will ever be executed under normal
+      // circumstances.
+      neededSize - buffer.remaining
     } else {
-      IntBuffer.allocate(buffer.limit * 2).put(buffer.array).put(codePoint)
+      // I do not expect this branch will ever be executed under normal
+      // circumstances.
+      throw new RuntimeException(s"Can not resize buffer as it would exceed largest valid size ${Int.MaxValue}. What are you doing?")
     }
 
+  /** Copy the contents of a given `IntBuffer` into a new `IntBuffer` with
+    * double capacity if the given `IntBuffer` is at capacity, unless doubling
+    * it would overflow, in that case attempt to just add the minimum needed
+    * allocation, if that is not possible then throw an error.
+    *
+    * The error case should only happen if there is a bug or someone is
+    * intentionally abusing the system. We need to handle it as it could be
+    * used to influence the result to potentially change a URI.
+    */
   @inline
-  private def insertAt(buffer: IntBuffer, index: Int, value: Int): IntBuffer = {
-    val pos: Int = buffer.position()
-    if (index >= pos) {
-      buffer.put(index, value).position(index + 1)
+  private def maybeResize(buffer: IntBuffer, neededSize: Int = 1): IntBuffer =
+    if (buffer.remaining >= neededSize) {
+      // This will be the branch most often hit by a wide margin.
+      buffer
     } else {
-      // shift everything at the current index forward
-      buffer.put(index + 1, buffer, index, pos - index).put(index, value).position(pos + 1)
+      val pos: Int = buffer.position
+      val newSize: Int = calculateNewSize(buffer, neededSize)
+      IntBuffer.allocate(newSize).put(buffer.array).position(pos)
     }
-  }
 
-  def encode(
+  def encodeRaw(
     params: BootstringParams
   )(
     value: String
   ): Either[String, String] = {
+
+    // Insert a code point into an `IntBuffer`, automatically resizing it, if
+    // the `IntBuffer` is at capacity.
+    def insertCodePoint(buffer: IntBuffer, codePoint: Int): IntBuffer =
+      maybeResize(buffer).put(codePoint)
 
     @tailrec
     def encodeCodePoint(buffer: IntBuffer, bias: Bias, q: Int, k: Int): IntBuffer = {
@@ -68,7 +104,7 @@ object Bootstring {
         if (params.isBasicCodePoint(codePoint)) {
           (buffer.put(codePoint), nonBasic)
         } else if (codePoint < params.initialN) {
-          // Only occurs in unusual BootString usage.
+          // Only occurs in unusual Bootstring usage.
           throw new RuntimeException(s"Input contains a non-basic code point < the initial N value. Code Point: ${codePoint}, Initial N: ${params.initialN}.")
         } else {
           (buffer, nonBasic + codePoint)
@@ -115,13 +151,26 @@ object Bootstring {
     }
   }
 
-  def decode(
+  def decodeRaw(
     params: BootstringParams
   )(
     value: String
   ): Either[String, String] = {
     type N = Int
     type Index = Int
+
+    // Insert a value into an `IntBuffer` at an index. If the `IntBuffer`
+    // already has a value at the index, shift all values from the index to
+    // position to the right.
+    def insertAt(buffer: IntBuffer, index: Int, value: Int): IntBuffer = {
+      val pos: Int = buffer.position()
+      if (index >= pos) {
+        maybeResize(buffer, index - buffer.remaining + 1).put(index, value).position(pos + 1)
+      } else {
+        // shift everything at the current index forward.
+        maybeResize(buffer).put(index + 1, buffer, index, pos - index).put(index, value).position(pos + 1)
+      }
+    }
 
     @tailrec
     def decodeCodePointAndIndex(
