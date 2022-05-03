@@ -1,5 +1,8 @@
 package cats.bootstring
 
+import cats._
+import cats.syntax.all._
+
 sealed abstract class TMin extends Product with Serializable {
   def value: Int
 
@@ -20,6 +23,17 @@ object TMin {
 
   def unsafeFromInt(value: Int): TMin =
     fromInt(value).fold(
+      e => throw new IllegalArgumentException(e),
+      identity
+    )
+
+  def fromString(value: String): Either[String, TMin] =
+    ApplicativeError[Either[Throwable, *], Throwable].catchNonFatal(
+      value.toInt
+    ).leftMap(_.getLocalizedMessage).flatMap(fromInt)
+
+  def unsafeFromString(value: String): TMin =
+    fromString(value).fold(
       e => throw new IllegalArgumentException(e),
       identity
     )

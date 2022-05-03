@@ -1,5 +1,7 @@
 package cats.bootstring
 
+import cats._
+import cats.syntax.all._
 import scala.annotation.tailrec
 
 sealed abstract class Bias extends Product with Serializable {
@@ -90,6 +92,17 @@ object Bias {
 
   def unsafeInitialFromInt(value: Int): Bias =
     initialFromInt(value).fold(
+      e => throw new IllegalArgumentException(e),
+      identity
+    )
+
+  def fromString(value: String): Either[String, Bias] =
+    ApplicativeError[Either[Throwable, *], Throwable].catchNonFatal(
+      value.toInt
+    ).leftMap(_.getLocalizedMessage).flatMap(initialFromInt)
+
+  def unsafeFromString(value: String): Bias =
+    fromString(value).fold(
       e => throw new IllegalArgumentException(e),
       identity
     )

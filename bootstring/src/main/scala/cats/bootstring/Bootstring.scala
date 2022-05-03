@@ -62,6 +62,11 @@ object Bootstring {
       IntBuffer.allocate(newSize).put(buffer.array).position(pos)
     }
 
+  /** Bootstring encode given `String`.
+    *
+    * @param params the [[BootstringParams]] to use.
+    * @param value  the `String` to encode.
+    */
   def encodeRaw(
     params: BootstringParams
   )(
@@ -151,6 +156,8 @@ object Bootstring {
     }
   }
 
+  /** Bootstring decode the given `String`.
+    */
   def decodeRaw(
     params: BootstringParams
   )(

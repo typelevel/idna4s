@@ -86,7 +86,10 @@ lazy val bootstring = crossProject(JVMPlatform, JSPlatform)
       if (tlIsScala3.value) {
         Nil
       } else {
-        List("org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided)
+        List(
+          "org.typelevel" %%% "literally"        % V.literallyV,
+          "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
+        )
       }
     },
     console / initialCommands := {

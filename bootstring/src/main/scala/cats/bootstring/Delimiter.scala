@@ -56,4 +56,27 @@ object Delimiter {
       es => throw new IllegalArgumentException(es.mkString_(", ")),
       identity
     )
+
+  def fromString(value: String): Either[NonEmptyList[String], Delimiter] =
+    if (value.length < 3) {
+      value.toList match {
+        case high :: low :: Nil =>
+          fromSurrogatePair(high, low)
+        case char :: Nil =>
+          fromChar(char).leftMap(NonEmptyList.one)
+        case Nil =>
+          "The empty string is not a valid boostring delimiter.".leftNel
+        case _ =>
+          // Not possible
+          s"A bootstring delimiter must be a single code point, the given value is invalid: ${value}".leftNel
+      }
+    } else {
+      s"A bootstring delimiter must be a single code point, the given value is invalid: ${value}".leftNel
+    }
+
+  def unsafeFromString(value: String): Delimiter =
+    fromString(value).fold(
+      es => throw new IllegalArgumentException(es.mkString_(", ")),
+      identity
+    )
 }
