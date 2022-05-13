@@ -1,6 +1,7 @@
 package cats
 
 import cats.data._
+import java.nio.Buffer
 import java.nio.CharBuffer
 import java.nio.IntBuffer
 import scala.annotation.tailrec
@@ -70,5 +71,28 @@ package object bootstring {
       }
 
     loop
+  }
+
+  /** This method sets the position on a `Buffer`. This gets around a widening
+    * in the Java 8 API.
+    */
+  def position[A <: Buffer](buffer: A, position: Int): A = {
+    buffer.position(position) // This is a `Buffer` not `A` on JRE 8.
+    buffer
+  }
+
+  /** This is an implementation of the Absolute bulk put operation added in JRE
+    * 16 using methods available on JRE 8.
+    */
+  def put(buffer: IntBuffer)(index: Int, src: IntBuffer, offset: Int, length: Int): IntBuffer = {
+    val oldPosition: Int = buffer.position()
+
+    buffer.position(index)
+
+    buffer.put(src.array, offset, length)
+
+    buffer.position(oldPosition)
+
+    buffer
   }
 }

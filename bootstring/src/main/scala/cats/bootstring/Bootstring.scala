@@ -59,7 +59,15 @@ object Bootstring {
     } else {
       val pos: Int = buffer.position
       val newSize: Int = calculateNewSize(buffer, neededSize)
-      IntBuffer.allocate(newSize).put(buffer.array).position(pos)
+
+      // Shadow here is because `(buffer: IntBuffer).position(pos): Buffer`
+      // but we want `IntBuffer`, e.g. it is getting widened to the super
+      // type.
+      IntBuffer.allocate(newSize).put(buffer.array) match {
+        case buffer =>
+          buffer.position(pos)
+          buffer
+      }
     }
 
   /** Bootstring encode given `String`.
@@ -172,10 +180,10 @@ object Bootstring {
     def insertAt(buffer: IntBuffer, index: Int, value: Int): IntBuffer = {
       val pos: Int = buffer.position()
       if (index >= pos) {
-        maybeResize(buffer, index - buffer.remaining + 1).put(index, value).position(pos + 1)
+        position(maybeResize(buffer, index - buffer.remaining + 1).put(index, value), pos + 1)
       } else {
         // shift everything at the current index forward.
-        maybeResize(buffer).put(index + 1, buffer, index, pos - index).put(index, value).position(pos + 1)
+        position(put(maybeResize(buffer))(index + 1, buffer, index, pos - index).put(index, value), pos + 1)
       }
     }
 
@@ -233,7 +241,7 @@ object Bootstring {
             case (i, xs) =>
               val nextOutputLength: Int = outputLength + 1
               val nextBias: Bias = bias.unsafeAdapt(params)(i - oldI, nextOutputLength, oldI === 0)
-              val nextN: Int = Math.addExact(n, Math.divideExact(i, nextOutputLength))
+              val nextN: Int = Math.addExact(n, i/nextOutputLength)
               i % nextOutputLength match {
                 //Intentional Shadow
                 case i =>
