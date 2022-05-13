@@ -198,7 +198,6 @@ object Bootstring {
       nonBasicDeltas match {
         case x :: xs =>
           val digit: Int = params.base.unsafeCodePointToDigit(x)
-          println(s"k = $k, i = $i, w = $w, bias = $bias, x = $x, digit = $digit")
           Math.addExact(i, Math.multiplyExact(digit, w)) match {
             // Intentional shadow
             case i =>
@@ -246,7 +245,6 @@ object Bootstring {
                 //Intentional Shadow
                 case i =>
                   insertAt(acc, i, nextN)
-                  println(s"nextN: $nextN, bias: $nextBias, position: ${i}, nextOutputLength: $nextOutputLength")
                   if (params.isBasicCodePoint(nextN) === false) {
                     i % nextOutputLength match {
                       // Intentional Shadow

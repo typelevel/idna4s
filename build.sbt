@@ -92,6 +92,9 @@ lazy val bootstring = crossProject(JVMPlatform, JSPlatform)
         )
       }
     },
+    libraryDependencies ++= Seq(
+      "org.scalameta" %%% "munit-scalacheck" % V.munitV
+    ).map(_ % Test),
     console / initialCommands := {
       List("cats.", "cats.syntax.all.", "cats.bootstring.")
         .map(value => s"import ${value}${wildcardImport.value}")
