@@ -1,8 +1,23 @@
-package cats.bootstring
+/*
+ * Copyright 2022 Typelevel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.typelevel.idna4s.bootstring
 
 import cats.data._
 import cats.syntax.all._
-import scala.collection.immutable.BitSet
 
 sealed abstract class BootstringParams extends Product with Serializable {
   def isBasicCodePoint: Int => Boolean
@@ -15,28 +30,27 @@ sealed abstract class BootstringParams extends Product with Serializable {
   def initialBias: Bias
   def initialN: Int
 
-  override final def toString: String =
+  final override def toString: String =
     s"BootstringParams(base = ${base}, delimiter = ${delimiter}, tmin = ${tmin}, tmax = ${tmax}, skew = ${skew}, damp = ${damp}, initialBias = ${initialBias}, initialN = ${initialN})"
-
 
 }
 
 object BootstringParams {
-  private[this] final case class BootstringParamsImpl(
-    override val isBasicCodePoint: Int => Boolean,
-    override val base: Base,
-    override val delimiter: Delimiter,
-    override val tmin: TMin,
-    override val tmax: TMax,
-    override val skew: Skew,
-    override val damp: Damp,
-    override val initialBias: Bias,
-    override val initialN: Int
+  final private[this] case class BootstringParamsImpl(
+      override val isBasicCodePoint: Int => Boolean,
+      override val base: Base,
+      override val delimiter: Delimiter,
+      override val tmin: TMin,
+      override val tmax: TMax,
+      override val skew: Skew,
+      override val damp: Damp,
+      override val initialBias: Bias,
+      override val initialN: Int
   ) extends BootstringParams
 
   val PunycodeParams: BootstringParams =
     unsafeFrom(
-      0x7F,
+      0x7f,
       Base.PunycodeBase,
       Delimiter.PunycodeDelimiter,
       TMin.PunycodeTMin,
@@ -47,19 +61,21 @@ object BootstringParams {
     )
 
   def apply(
-    isBasicCodePoint: Int => Boolean,
-    base: Base,
-    delimiter: Delimiter,
-    tmin: TMin,
-    tmax: TMax,
-    skew: Skew,
-    damp: Damp,
-    initialBias: Bias,
-    initialN: Int
+      isBasicCodePoint: Int => Boolean,
+      base: Base,
+      delimiter: Delimiter,
+      tmin: TMin,
+      tmax: TMax,
+      skew: Skew,
+      damp: Damp,
+      initialBias: Bias,
+      initialN: Int
   ): Either[NonEmptyList[String], BootstringParams] =
-    ((s"tmin must be <= tmax: ${tmin} > ${tmax}".leftNel[Unit]).whenA(tmin.value > tmax.value),
-  (s"initial_bias mod base must be <= base - tmin: ${initialBias} mod ${base} > ${base} - ${tmin}".leftNel[Unit]).whenA(initialBias.value % base.value > (base.value - tmin.value))
-    ).parMapN{
+    (
+      (s"tmin must be <= tmax: ${tmin} > ${tmax}".leftNel[Unit]).whenA(tmin.value > tmax.value),
+      (s"initial_bias mod base must be <= base - tmin: ${initialBias} mod ${base} > ${base} - ${tmin}"
+        .leftNel[Unit])
+        .whenA(initialBias.value % base.value > (base.value - tmin.value))).parMapN {
       case _ =>
         BootstringParamsImpl(
           isBasicCodePoint,
@@ -75,14 +91,14 @@ object BootstringParams {
     }
 
   def apply(
-    maxBasicCodePoint: Int,
-    base: Base,
-    delimiter: Delimiter,
-    tmin: TMin,
-    tmax: TMax,
-    skew: Skew,
-    damp: Damp,
-    initialBias: Bias
+      maxBasicCodePoint: Int,
+      base: Base,
+      delimiter: Delimiter,
+      tmin: TMin,
+      tmax: TMax,
+      skew: Skew,
+      damp: Damp,
+      initialBias: Bias
   ): Either[NonEmptyList[String], BootstringParams] =
     if (maxBasicCodePoint < Character.MAX_CODE_POINT && maxBasicCodePoint >= 0) {
       apply(
@@ -97,19 +113,20 @@ object BootstringParams {
         maxBasicCodePoint + 1
       )
     } else {
-      s"The maximum basic code point must be >= 0 and < Character.MAX_CODE_POINT: ${maxBasicCodePoint}".leftNel[BootstringParams]
+      s"The maximum basic code point must be >= 0 and < Character.MAX_CODE_POINT: ${maxBasicCodePoint}"
+        .leftNel[BootstringParams]
     }
 
   def unsafeFrom(
-    isBasicCodePoint: Int => Boolean,
-    base: Base,
-    delimiter: Delimiter,
-    tmin: TMin,
-    tmax: TMax,
-    skew: Skew,
-    damp: Damp,
-    initialBias: Bias,
-    initialN: Int
+      isBasicCodePoint: Int => Boolean,
+      base: Base,
+      delimiter: Delimiter,
+      tmin: TMin,
+      tmax: TMax,
+      skew: Skew,
+      damp: Damp,
+      initialBias: Bias,
+      initialN: Int
   ): BootstringParams =
     apply(
       isBasicCodePoint,
@@ -122,19 +139,22 @@ object BootstringParams {
       initialBias,
       initialN
     ).fold(
-      errors => throw new IllegalArgumentException(s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(", ")}"""),
+      errors =>
+        throw new IllegalArgumentException(
+          s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(
+            ", ")}"""),
       identity
     )
 
   def unsafeFrom(
-    maxBasicCodePoint: Int,
-    base: Base,
-    delimiter: Delimiter,
-    tmin: TMin,
-    tmax: TMax,
-    skew: Skew,
-    damp: Damp,
-    initialBias: Bias
+      maxBasicCodePoint: Int,
+      base: Base,
+      delimiter: Delimiter,
+      tmin: TMin,
+      tmax: TMax,
+      skew: Skew,
+      damp: Damp,
+      initialBias: Bias
   ): BootstringParams =
     apply(
       maxBasicCodePoint,
@@ -146,7 +166,10 @@ object BootstringParams {
       damp,
       initialBias
     ).fold(
-      errors => throw new IllegalArgumentException(s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(", ")}"""),
+      errors =>
+        throw new IllegalArgumentException(
+          s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(
+            ", ")}"""),
       identity
     )
 }

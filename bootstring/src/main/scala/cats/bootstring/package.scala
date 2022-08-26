@@ -1,4 +1,20 @@
-package cats
+/*
+ * Copyright 2022 Typelevel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.typelevel.idna4s
 
 import cats.data._
 import java.nio.Buffer
@@ -25,13 +41,13 @@ package object bootstring {
   }
 
   def codePointsAsChain(value: String): Chain[Int] =
-    foldLeftCodePoints(value)(Chain.empty[Int]){
+    foldLeftCodePoints(value)(Chain.empty[Int]) {
       case (acc, value) =>
         acc :+ value
     }
 
   def codePointsAsBuffer(value: String): IntBuffer =
-    foldLeftCodePoints(value)(IntBuffer.allocate(value.length)){
+    foldLeftCodePoints(value)(IntBuffer.allocate(value.length)) {
       case (acc, value) =>
         acc.put(value)
     }
@@ -73,18 +89,20 @@ package object bootstring {
     loop
   }
 
-  /** This method sets the position on a `Buffer`. This gets around a widening
-    * in the Java 8 API.
-    */
+  /**
+   * This method sets the position on a `Buffer`. This gets around a widening in the Java 8 API.
+   */
   def position[A <: Buffer](buffer: A, position: Int): A = {
     buffer.position(position) // This is a `Buffer` not `A` on JRE 8.
     buffer
   }
 
-  /** This is an implementation of the Absolute bulk put operation added in JRE
-    * 16 using methods available on JRE 8.
-    */
-  def put(buffer: IntBuffer)(index: Int, src: IntBuffer, offset: Int, length: Int): IntBuffer = {
+  /**
+   * This is an implementation of the Absolute bulk put operation added in JRE 16 using methods
+   * available on JRE 8.
+   */
+  def put(
+      buffer: IntBuffer)(index: Int, src: IntBuffer, offset: Int, length: Int): IntBuffer = {
     val oldPosition: Int = buffer.position()
 
     buffer.position(index)

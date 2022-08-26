@@ -1,4 +1,20 @@
-package cats.bootstring
+/*
+ * Copyright 2022 Typelevel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.typelevel.idna4s.bootstring
 
 import cats.data._
 import cats.syntax.all._
@@ -9,11 +25,12 @@ sealed abstract class Delimiter extends Product with Serializable {
   final def charString: String =
     new String(Character.toChars(codePoint))
 
-  override final def toString: String = s"Delimiter(codePoint = ${codePoint}, charString = ${charString})"
+  final override def toString: String =
+    s"Delimiter(codePoint = ${codePoint}, charString = ${charString})"
 }
 
 object Delimiter {
-  private[this] final case class DelimiterImpl(override val codePoint: Int) extends Delimiter
+  final private[this] case class DelimiterImpl(override val codePoint: Int) extends Delimiter
 
   val PunycodeDelimiter: Delimiter = unsafeFromChar('-')
 
@@ -29,13 +46,18 @@ object Delimiter {
       case value if value < Character.MIN_SURROGATE =>
         fromCodePoint(value)
       case _ =>
-        Left(s"Char is part of a surrogate pair, but that is not a valid code point in isolation: '${char}'")
+        Left(
+          s"Char is part of a surrogate pair, but that is not a valid code point in isolation: '${char}'")
     }
 
   def fromSurrogatePair(high: Char, low: Char): Either[NonEmptyList[String], Delimiter] =
-    (s"Character $high is not a high surrogate unicode character.".leftNel[Delimiter].unlessA(Character.isHighSurrogate(high)),
-      s"Character $low is not a low surrogate unicode character.".leftNel[Delimiter].unlessA(Character.isLowSurrogate(low))
-    ).parTupled.flatMap{
+    (
+      s"Character $high is not a high surrogate unicode character."
+        .leftNel[Delimiter]
+        .unlessA(Character.isHighSurrogate(high)),
+      s"Character $low is not a low surrogate unicode character."
+        .leftNel[Delimiter]
+        .unlessA(Character.isLowSurrogate(low))).parTupled.flatMap {
       case _ => fromCodePoint(Character.toCodePoint(high, low)).leftMap(NonEmptyList.one)
     }
 
