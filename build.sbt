@@ -12,6 +12,7 @@ ThisBuild / crossScalaVersions         := Seq(Scala212, Scala213, Scala3)
 ThisBuild / scalaVersion               := Scala213
 ThisBuild / scalafixScalaBinaryVersion := (LocalRootProject / scalaBinaryVersion).value
 
+ThisBuild / developers += tlGitHubDev("isomarcte", "David Strawn")
 ThisBuild / licenses  := List(License.MIT)
 ThisBuild / startYear := Some(2022)
 
