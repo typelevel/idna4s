@@ -8,12 +8,12 @@ val munitV     = "1.0.0-M6"
 
 ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
 
-ThisBuild / scalaVersion  := Scala213
-ThisBuild / tlBaseVersion := "0.0"
+ThisBuild / scalaVersion               := Scala213
+ThisBuild / tlBaseVersion              := "0.0"
 ThisBuild / scalafixScalaBinaryVersion := (LocalRootProject / scalaBinaryVersion).value
 
 // TODO remove me!
-ThisBuild / tlFatalWarnings := false
+ThisBuild / tlFatalWarnings   := false
 ThisBuild / tlCiScalafixCheck := false
 
 // Utility
