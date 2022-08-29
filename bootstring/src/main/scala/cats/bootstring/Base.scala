@@ -73,9 +73,7 @@ object Base {
         new Base {
           override val value: Int = baseValue
 
-          final override def unsafeDigitToCodePoint(
-              digit: Int,
-              uppercase: Boolean = false): Int =
+          final override def unsafeDigitToCodePoint(digit: Int, uppercase: Boolean): Int =
             if (uppercase) {
               codePointArray(digit).toUpper.toInt
             } else {
@@ -87,7 +85,7 @@ object Base {
 
           final override def digitToCodePoint(
               digit: Int,
-              uppercase: Boolean = false): Either[String, Int] =
+              uppercase: Boolean): Either[String, Int] =
             ApplicativeError[Either[Throwable, *], Throwable]
               .catchNonFatal(
                 unsafeDigitToCodePoint(digit, uppercase)

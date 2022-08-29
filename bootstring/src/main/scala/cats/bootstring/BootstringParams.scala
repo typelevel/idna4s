@@ -21,8 +21,10 @@
 
 package org.typelevel.idna4s.bootstring
 
+import cats._
 import cats.data._
 import cats.syntax.all._
+import scala.annotation.tailrec
 
 sealed abstract class BootstringParams extends Product with Serializable {
   def isBasicCodePoint: Int => Boolean
@@ -34,6 +36,30 @@ sealed abstract class BootstringParams extends Product with Serializable {
   def damp: Damp
   def initialBias: Bias
   def initialN: Int
+
+  // final
+
+  final def unsafeAdaptBias(
+      delta: Int,
+      numpoints: Int,
+      firstTime: Boolean
+  ): Bias =
+    BootstringParams.unsafeAdaptBias(this)(
+      delta = delta,
+      numpoints = numpoints,
+      firstTime = firstTime
+    )
+
+  final def adaptBias(
+      delta: Int,
+      numpoints: Int,
+      firstTime: Boolean
+  ): Either[String, Bias] =
+    BootstringParams.adaptBias(this)(
+      delta = delta,
+      numpoints = numpoints,
+      firstTime = firstTime
+    )
 
   final override def toString: String =
     s"BootstringParams(base = ${base}, delimiter = ${delimiter}, tmin = ${tmin}, tmax = ${tmax}, skew = ${skew}, damp = ${damp}, initialBias = ${initialBias}, initialN = ${initialN})"
@@ -177,4 +203,90 @@ object BootstringParams {
             ", ")}"""),
       identity
     )
+
+  // Bias adaptation functions
+  //
+  // These are found in this file, rather than in companion object for Bias,
+  // because bias adaptation is a function of the bootstring parameters and
+  // the bootstring state, but _not_ the current bias.
+
+  def unsafeAdaptBias(damp: Damp, base: Base, tmin: TMin, tmax: TMax, skew: Skew)(
+      delta: Int,
+      numpoints: Int,
+      firstTime: Boolean): Bias = {
+
+    @tailrec
+    def loop(delta: Int, k: Int): (Int, Int) =
+      if (delta > ((base.value - tmin.value) * tmax.value) / 2) {
+        loop(delta / (base.value - tmin.value), k + base.value)
+      } else {
+        (delta, k)
+      }
+
+    if (numpoints > 0) {
+      val delta0: Int =
+        if (firstTime) {
+          delta / damp.value
+        } else {
+          delta / 2
+        }
+
+      val delta1: Int =
+        delta0 + (delta0 / numpoints)
+
+      val (delta2, k) = loop(delta1, 0)
+
+      Bias.unsafeFromInt(k + (((base.value - tmin.value + 1) * delta2) / (delta2 + skew.value)))
+    } else {
+      throw new IllegalArgumentException(
+        s"The number of encoded/decoded codepoints must be > 0 when adapting the bias, but was ${numpoints}")
+    }
+  }
+
+  @inline
+  def unsafeAdaptBias(bootstringParams: BootstringParams)(
+      delta: Int,
+      numpoints: Int,
+      firstTime: Boolean): Bias =
+    unsafeAdaptBias(
+      damp = bootstringParams.damp,
+      base = bootstringParams.base,
+      tmin = bootstringParams.tmin,
+      tmax = bootstringParams.tmax,
+      skew = bootstringParams.skew
+    )(
+      delta = delta,
+      numpoints = numpoints,
+      firstTime = firstTime
+    )
+
+  def adaptBias(bootstringParams: BootstringParams)(
+      delta: Int,
+      numpoints: Int,
+      firstTime: Boolean): Either[String, Bias] =
+    adaptBias(
+      damp = bootstringParams.damp,
+      base = bootstringParams.base,
+      tmin = bootstringParams.tmin,
+      tmax = bootstringParams.tmax,
+      skew = bootstringParams.skew
+    )(
+      delta = delta,
+      numpoints = numpoints,
+      firstTime = firstTime
+    )
+
+  def adaptBias(damp: Damp, base: Base, tmin: TMin, tmax: TMax, skew: Skew)(
+      delta: Int,
+      numpoints: Int,
+      firstTime: Boolean): Either[String, Bias] =
+    ApplicativeError[Either[Throwable, *], Throwable]
+      .catchNonFatal(
+        unsafeAdaptBias(damp, base, tmin, tmax, skew)(
+          delta = delta,
+          numpoints = numpoints,
+          firstTime = firstTime
+        )
+      )
+      .leftMap(_.getLocalizedMessage)
 }
