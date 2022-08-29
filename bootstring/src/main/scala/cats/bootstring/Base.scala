@@ -34,7 +34,8 @@ import cats.syntax.all._
  *
  * @note
  *   Instances of this type used by RFC-3492 may have unexpected properties. For example, the
- *   base used by [[Base#Punycode]] uses 'A' to represent 0 and '0' represents 26, e.g. 'z' + 1.
+ *   base used by [[Base#PunycodeBase]] uses 'A' to represent 0 and '0' represents 26, e.g. 'z'
+ *   + 1.
  */
 sealed abstract class Base extends Serializable {
 
