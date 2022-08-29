@@ -101,7 +101,23 @@ object Base {
           s"Code point $codePoint is not valid for the given base.")
       }
 
-    unsafeFrom(36, d => lowercaseArray(d), d => uppercaseArray(d), codePointDigitToInt)
+    // Developer's note,
+    //
+    // This method exists because of some very strange behavior on ScalaJS
+    // where the (caught) index out of bounds exception caused an
+    // "UndefinedBehavior" exception to be thrown.
+    def intToCodePointDigit(int: Int, arr: Array[Int]): Int =
+      if (int < arr.size) {
+        arr(int)
+      } else {
+        throw new RuntimeException(s"There is no digit in this base which corresponds to $int.")
+      }
+
+    unsafeFrom(
+      36,
+      d => intToCodePointDigit(d, lowercaseArray),
+      d => intToCodePointDigit(d, uppercaseArray),
+      codePointDigitToInt)
   }
 
   /**
