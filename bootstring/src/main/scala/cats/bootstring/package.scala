@@ -22,6 +22,7 @@
 package org.typelevel.idna4s
 
 import cats.data._
+import cats.syntax.all._
 import java.nio.Buffer
 import java.nio.CharBuffer
 import java.nio.IntBuffer
@@ -64,7 +65,7 @@ package object bootstring {
       if (i >= value.remaining) {
         out
       } else {
-        if (value.get(i) == delimiter.codePoint) {
+        if (value.get(i) === delimiter.codePoint) {
           loop(i + 1, Some(i))
         } else {
           loop(i + 1, out)
