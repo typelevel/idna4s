@@ -120,12 +120,12 @@ object Bootstring {
         }
 
       if (q < threshold) {
-        insertCodePoint(buffer, params.base.unsafeDigitToCodePoint(q))
+        insertCodePoint(buffer, params.base.unsafeIntToCodePointDigit(q))
       } else {
         val qt: Int = q - threshold
         val bt: Int = params.base.value - threshold
         encodeCodePoint(
-          insertCodePoint(buffer, params.base.unsafeDigitToCodePoint(threshold + (qt % bt))),
+          insertCodePoint(buffer, params.base.unsafeIntToCodePointDigit(threshold + (qt % bt))),
           bias,
           q = qt / bt,
           k = k + params.base.value
@@ -231,7 +231,7 @@ object Bootstring {
     ): (Int, List[Int]) =
       nonBasicDeltas match {
         case x :: xs =>
-          val digit: Int = params.base.unsafeCodePointToDigit(x)
+          val digit: Int = params.base.unsafeCodePointDigitToInt(x)
           Math.addExact(i, Math.multiplyExact(digit, w)) match {
             // Intentional shadow
             case i =>
