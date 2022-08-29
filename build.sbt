@@ -28,6 +28,10 @@ ThisBuild / wildcardImport := {
   }
 }
 
+// GHA
+
+ThisBuild / tlCiScalafixCheck := tlIsScala3.value == false
+
 // Projects
 
 lazy val root = tlCrossRootProject
