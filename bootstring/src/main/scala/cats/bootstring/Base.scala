@@ -103,9 +103,10 @@ object Base {
 
     // Developer's note,
     //
-    // This method exists because of some very strange behavior on ScalaJS
-    // where the (caught) index out of bounds exception caused an
-    // "UndefinedBehavior" exception to be thrown.
+    // This method exists because on ScalaJS we can not catch the array out of
+    // bounds exception.
+    //
+    // See https://www.scala-js.org/doc/semantics.html#undefined-behaviors
     def intToCodePointDigit(int: Int, arr: Array[Int]): Int =
       if (int < arr.size) {
         arr(int)
