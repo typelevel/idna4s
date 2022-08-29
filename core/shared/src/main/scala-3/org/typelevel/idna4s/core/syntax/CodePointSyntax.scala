@@ -38,7 +38,7 @@ private object CodePointSyntax {
   private def codePointLiteralExpr(sc: Expr[StringContext], args: Expr[Seq[Any]])(
       using q: Quotes): Expr[CodePoint] =
     sc.value match {
-      case Some(sc) if sc.parts.size == 1 =>
+      case Some(sc) if sc.parts.size === 1 =>
         val value: String = sc.parts.head
         CodePoint
           .fromString(value)
