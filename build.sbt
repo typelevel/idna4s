@@ -30,7 +30,7 @@ ThisBuild / wildcardImport := {
 
 // GHA
 
-ThisBuild / scalafixAll / skip := tlIsScala3.value
+ThisBuild / scalafixAll / skip    := tlIsScala3.value
 ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 
 // Projects
