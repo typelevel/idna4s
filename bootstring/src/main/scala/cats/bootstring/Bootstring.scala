@@ -71,7 +71,7 @@ object Bootstring {
    * change a URI.
    */
   @inline
-  private def maybeResize(buffer: IntBuffer, neededSize: Int = 1): IntBuffer =
+  private def maybeResize(buffer: IntBuffer, neededSize: Int): IntBuffer =
     if (buffer.remaining >= neededSize) {
       // This will be the branch most often hit by a wide margin.
       buffer
@@ -106,7 +106,7 @@ object Bootstring {
     // Insert a code point into an `IntBuffer`, automatically resizing it, if
     // the `IntBuffer` is at capacity.
     def insertCodePoint(buffer: IntBuffer, codePoint: Int): IntBuffer =
-      maybeResize(buffer).put(codePoint)
+      maybeResize(buffer, 1).put(codePoint)
 
     @tailrec
     def encodeCodePoint(buffer: IntBuffer, bias: Bias, q: Int, k: Int): IntBuffer = {
@@ -168,7 +168,7 @@ object Bootstring {
                   } else if (cp === codePoint) {
                     (
                       encodeCodePoint(buffer, bias, delta, params.base.value),
-                      bias.unsafeAdapt(params)(delta, h + 1, h === basicCodePointCount),
+                      params.unsafeAdaptBias(delta, h + 1, h === basicCodePointCount),
                       0,
                       h + 1)
                   } else {
@@ -204,7 +204,6 @@ object Bootstring {
   )(
       value: String
   ): Either[String, String] = {
-    type N = Int
     type Index = Int
 
     // Insert a value into an `IntBuffer` at an index. If the `IntBuffer`
@@ -217,7 +216,7 @@ object Bootstring {
       } else {
         // shift everything at the current index forward.
         position(
-          put(maybeResize(buffer))(index + 1, buffer, index, pos - index).put(index, value),
+          put(maybeResize(buffer, 1))(index + 1, buffer, index, pos - index).put(index, value),
           pos + 1)
       }
     }
@@ -286,7 +285,7 @@ object Bootstring {
             case (i, xs) =>
               val nextOutputLength: Int = outputLength + 1
               val nextBias: Bias =
-                bias.unsafeAdapt(params)(i - oldI, nextOutputLength, oldI === 0)
+                params.unsafeAdaptBias(i - oldI, nextOutputLength, oldI === 0)
               val nextN: Int = Math.addExact(n, i / nextOutputLength)
               i % nextOutputLength match {
                 // Intentional Shadow
@@ -346,9 +345,10 @@ object Bootstring {
 
       // Partitioning has to be done in terms of _code points_, not
       // java.lang.Char. While not common, there is no restriction in
-      // Bootstring to prevent the delimiter from being a surrogate pair, thus
-      // the more simple value.span(_ != params.delimiter.value.toChar) would
-      // be invalid.
+      // Bootstring to prevent the delimiter from being a code point which
+      // would be represented by a surrogate pair in UTF-16, thus the more
+      // simple value.span(_ != params.delimiter.value.toChar) would be
+      // invalid.
       val (basicCodePoints, nonBasicCodePointDeltas, basicCodePointLength, _)
           : (List[Int], List[Int], Int, Boolean) =
         foldLeftCodePoints(value.reverse)((List.empty[Int], List.empty[Int], 0, false)) {
