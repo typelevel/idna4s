@@ -16,10 +16,6 @@ ThisBuild / developers += tlGitHubDev("isomarcte", "David Strawn")
 ThisBuild / licenses  := List(License.MIT)
 ThisBuild / startYear := Some(2022)
 
-// TODO remove me!
-ThisBuild / tlFatalWarnings   := false
-ThisBuild / tlCiScalafixCheck := false
-
 // Utility
 
 lazy val wildcardImport: SettingKey[Char] =
@@ -31,24 +27,6 @@ ThisBuild / wildcardImport := {
     '_'
   }
 }
-
-// GHA
-
-ThisBuild / githubWorkflowBuild ++= List(
-  WorkflowStep.Sbt(
-    List("${{ matrix.ci }}", "scalafixAll --check"),
-    name = Some("Check Scalafix rules"),
-    cond = Some(s"matrix.scala != '$Scala3'")
-  ),
-  WorkflowStep.Sbt(
-    List("${{ matrix.ci }}", "scalafmtSbtCheck"),
-    name = Some("Check Scalafmt Sbt")
-  ),
-  WorkflowStep.Sbt(
-    List("${{ matrix.ci }}", "scalafmtCheckAll"),
-    name = Some("Check Scalafmt All")
-  )
-)
 
 // Projects
 
