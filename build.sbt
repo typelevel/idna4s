@@ -32,6 +32,24 @@ ThisBuild / wildcardImport := {
   }
 }
 
+// GHA
+
+ThisBuild / githubWorkflowBuild ++= List(
+  WorkflowStep.Sbt(
+    List("${{ matrix.ci }}", "scalafixAll --check"),
+    name = Some("Check Scalafix rules"),
+    cond = Some(s"matrix.scala != '$Scala3'")
+  ),
+  WorkflowStep.Sbt(
+    List("${{ matrix.ci }}", "scalafmtSbtCheck"),
+    name = Some("Check Scalafmt Sbt")
+  ),
+  WorkflowStep.Sbt(
+    List("${{ matrix.ci }}", "scalafmtCheckAll"),
+    name = Some("Check Scalafmt All")
+  )
+)
+
 // Projects
 
 lazy val root = tlCrossRootProject

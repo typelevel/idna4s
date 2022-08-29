@@ -92,6 +92,16 @@ jobs:
         if: matrix.java == 'temurin@8'
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' doc
 
+      - name: Check Scalafix rules
+        if: matrix.scala != '3.1.3'
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' '${{ matrix.ci }}' 'scalafixAll --check'
+
+      - name: Check Scalafmt Sbt
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' '${{ matrix.ci }}' scalafmtSbtCheck
+
+      - name: Check Scalafmt All
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' '${{ matrix.ci }}' scalafmtCheckAll
+
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
         run: mkdir -p bootstring/.native/target target .js/target bootstring/.js/target bootstring/.jvm/target .jvm/target .native/target project/target
