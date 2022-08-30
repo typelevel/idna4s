@@ -21,30 +21,73 @@
 
 package org.typelevel.idna4s.bootstring
 
-import cats._
 import cats.syntax.all._
 
-sealed abstract class Base extends Serializable {
+/**
+ * A representation of a numerical base, mapping between Unicode code points in the base and
+ * numerical values.
+ *
+ * @note
+ *   While this ''technically'' is a general purpose representation, it has a very minimal
+ *   feature set.
+ *
+ * @note
+ *   Instances of this type used by RFC-3492 may have unexpected properties. For example, the
+ *   base used by [[Base#PunycodeBase]] uses 'A' to represent 0 and '0' represents 26, e.g. 'z'
+ *   + 1.
+ */
+abstract class Base extends Serializable {
+
+  /**
+   * A number of digits in the given base
+   */
   def value: Int
 
-  def digitToCodePoint(digit: Int, uppercase: Boolean = false): Either[String, Int]
+  /**
+   * Attempt to convert a numerical value to the Unicode code point representing a digit with
+   * that value in this base.
+   */
+  def intToCodePointDigit(int: Int, uppercase: Boolean = false): Either[String, Int]
 
-  def codePointToDigit(codePoint: Int): Either[String, Int]
+  /**
+   * Attempt to convert a Unicode code point representing a digit in this base to a numerical
+   * value.
+   */
+  def codePointDigitToInt(codePoint: Int): Either[String, Int]
 
-  def unsafeDigitToCodePoint(digit: Int, uppercase: Boolean = false): Int
+  /**
+   * As [[#intToCodePointDigit]], but throws on invalid input.
+   */
+  def unsafeIntToCodePointDigit(int: Int, uppercase: Boolean = false): Int
 
-  def unsafeCodePointToDigit(codePoint: Int): Int
+  /**
+   * As [[#codePointDigitToInt]], but throws on invalid input.
+   */
+  def unsafeCodePointDigitToInt(codePoint: Int): Int
 
   final override def toString: String = s"Base(value = ${value})"
 }
 
 object Base {
 
-  val PunycodeBase: Base = {
-    val lowercaseChars: List[Char] =
+  /**
+   * The base used by the Bootstring algorithm for the Punycode parameters.
+   *
+   * @note
+   *   This base may be surprising as unlike other base encodings (such as hexidecimal), 'A'
+   *   represents 0 and '0' represents 26, e.g. 'z' + 1.
+   */
+  val PunycodeBase: Base = new Base {
+    private val lowercaseChars: List[Char] =
       (Range.inclusive('a', 'z') ++ Range.inclusive('0', '9')).toList.map(_.toChar)
+    private val lowercaseArray: Array[Int] =
+      lowercaseChars.map(_.toInt).toArray
+    private val uppercaseArray: Array[Int] =
+      lowercaseChars.map(_.toUpper.toInt).toArray
 
-    def codePointToDigit(codePoint: Int): Int =
+    override val value: Int = 36
+
+    override def unsafeCodePointDigitToInt(codePoint: Int): Int =
       if (codePoint >= 'A'.toInt && codePoint <= 'Z'.toInt) {
         // A-Z
         codePoint - 'A'.toInt
@@ -56,62 +99,35 @@ object Base {
         codePoint - 22
       } else {
         throw new IllegalArgumentException(
-          s"Code point $codePoint is valid for the given base.")
+          s"Code point $codePoint is not valid for the given base.")
       }
 
-    unsafeFrom(36, lowercaseChars, codePointToDigit)
-  }
-
-  def from(
-      baseValue: Int,
-      codePointList: List[Char],
-      codePointToDigitF: Int => Int
-  ): Either[String, Base] =
-    if (codePointList.size === baseValue) {
-      val codePointArray: Array[Char] = codePointList.toArray
-      Right(
-        new Base {
-          override val value: Int = baseValue
-
-          final override def unsafeDigitToCodePoint(digit: Int, uppercase: Boolean): Int =
-            if (uppercase) {
-              codePointArray(digit).toUpper.toInt
-            } else {
-              codePointArray(digit).toLower.toInt
-            }
-
-          final override def unsafeCodePointToDigit(codePoint: Int): Int =
-            codePointToDigitF(codePoint)
-
-          final override def digitToCodePoint(
-              digit: Int,
-              uppercase: Boolean): Either[String, Int] =
-            ApplicativeError[Either[Throwable, *], Throwable]
-              .catchNonFatal(
-                unsafeDigitToCodePoint(digit, uppercase)
-              )
-              .leftMap(_.getLocalizedMessage)
-
-          final override def codePointToDigit(codePoint: Int): Either[String, Int] =
-            ApplicativeError[Either[Throwable, *], Throwable]
-              .catchNonFatal(
-                unsafeCodePointToDigit(codePoint)
-              )
-              .leftMap(_.getLocalizedMessage)
+    override def unsafeIntToCodePointDigit(int: Int, uppercase: Boolean = false): Int =
+      if (int < lowercaseArray.size) {
+        if (uppercase) {
+          uppercaseArray(int)
+        } else {
+          lowercaseArray(int)
         }
-      )
-    } else {
-      Left(
-        s"Base values must be equal to the size of the defined code points for each base digit. codePointList size is ${codePointList.size}, base value is ${baseValue}")
-    }
+      } else {
+        throw new IllegalArgumentException(
+          s"There is no digit in this base which corresponds to $int.")
+      }
 
-  def unsafeFrom(
-      baseValue: Int,
-      codePointList: List[Char],
-      codePointToDigit: Int => Int
-  ): Base =
-    from(baseValue, codePointList, codePointToDigit).fold(
-      e => throw new IllegalArgumentException(e),
-      identity
-    )
+    override def intToCodePointDigit(
+        int: Int,
+        uppercase: Boolean = false): Either[String, Int] =
+      Either
+        .catchNonFatal(
+          unsafeIntToCodePointDigit(int, uppercase)
+        )
+        .leftMap(_.getLocalizedMessage)
+
+    override def codePointDigitToInt(codePoint: Int): Either[String, Int] =
+      Either
+        .catchNonFatal(
+          unsafeCodePointDigitToInt(codePoint)
+        )
+        .leftMap(_.getLocalizedMessage)
+  }
 }
