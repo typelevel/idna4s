@@ -85,4 +85,10 @@ final class BaseTests extends ScalaCheckSuite {
     assertEquals(baseValue, 36)
     assertEquals(baseValue, Base.PunycodeBase.value)
   }
+
+  test(
+    "Attempting to convert invalid int values should fail gracefully for the safe methods.") {
+    assert(Base.PunycodeBase.intToCodePointDigit(-1).isLeft)
+    assert(Base.PunycodeBase.intToCodePointDigit(Base.PunycodeBase.value).isLeft)
+  }
 }

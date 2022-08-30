@@ -103,7 +103,7 @@ object Base {
       }
 
     override def unsafeIntToCodePointDigit(int: Int, uppercase: Boolean = false): Int =
-      if (int < lowercaseArray.size) {
+      if (int < lowercaseArray.size && int >= 0) {
         if (uppercase) {
           uppercaseArray(int)
         } else {
