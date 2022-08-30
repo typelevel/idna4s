@@ -68,4 +68,21 @@ final class BaseTests extends ScalaCheckSuite {
   test("Punycode int to code point digit round trip") {
     intToDigitToIntRoundTrip(Base.PunycodeBase)
   }
+
+  test("Punycode code point digit to int round trip") {
+    val baseValue: Int =
+      (Range('a', 'z').inclusive ++ Range('0', '9').inclusive).toList.foldLeft(0) {
+        case (expected, digit) =>
+          assertEquals(
+            Base.PunycodeBase.codePointDigitToInt(digit.toChar.toLower.toInt),
+            Right(expected))
+          assertEquals(
+            Base.PunycodeBase.codePointDigitToInt(digit.toChar.toUpper.toInt),
+            Right(expected))
+          expected + 1
+      }
+
+    assertEquals(baseValue, 36)
+    assertEquals(baseValue, Base.PunycodeBase.value)
+  }
 }
