@@ -4,9 +4,11 @@ val Scala212 = "2.12.16"
 val Scala213 = "2.13.8"
 val Scala3   = "3.1.3"
 
-val catsV      = "2.8.0"
-val literallyV = "1.1.0"
-val munitV     = "1.0.0-M6"
+val catsV            = "2.8.0"
+val disciplineMunitV = "2.0.0-M3"
+val literallyV       = "1.1.0"
+val munitV           = "1.0.0-M6"
+val scalacheckV      = "1.16.0"
 
 ThisBuild / crossScalaVersions         := Seq(Scala212, Scala213, Scala3)
 ThisBuild / scalaVersion               := Scala213
@@ -38,12 +40,14 @@ lazy val projectName: String = "idna4s"
 
 lazy val root = tlCrossRootProject
   .aggregate(
-    core
+    core,
+    scalacheck,
+    tests
   )
   .settings(name := projectName)
 
 lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .in(file("core"))
   .settings(
     name := s"${projectName}-core",
@@ -62,7 +66,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       }
     },
     libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit-scalacheck" % munitV
+      "org.scalameta" %%% "munit-scalacheck" % munitV,
+      "org.typelevel" %%% "discipline-munit" % disciplineMunitV
     ).map(_ % Test),
     console / initialCommands := {
       List(
@@ -75,3 +80,52 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     },
     consoleQuick / initialCommands := ""
   )
+
+lazy val scalacheck = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
+  .in(file("scalacheck"))
+  .settings(
+    name := s"${projectName}-scalacheck",
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %%% "scalacheck" % scalacheckV
+    ),
+    console / initialCommands := {
+      List(
+        "cats.",
+        "cats.syntax.all.",
+        "org.typelevel.idna4s.core.",
+        "org.typelevel.idna4s.core.syntax.all.",
+        "org.typelevel.idna4s.scalacheck.")
+        .map(value => s"import ${value}${wildcardImport.value}")
+        .mkString("\n")
+    },
+    consoleQuick / initialCommands := ""
+  )
+  .dependsOn(core)
+
+lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
+  .in(file("tests"))
+  .settings(
+    name := s"${projectName}-tests",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %%% "discipline-munit" % disciplineMunitV,
+      "org.typelevel" %%% "cats-laws"        % catsV
+    ),
+    console / initialCommands := {
+      List(
+        "cats.",
+        "cats.syntax.all.",
+        "org.typelevel.idna4s.core.",
+        "org.typelevel.idna4s.core.syntax.all.",
+        "org.typelevel.idna4s.scalacheck.")
+        .map(value => s"import ${value}${wildcardImport.value}")
+        .mkString("\n")
+    },
+    consoleQuick / initialCommands := ""
+  )
+  .jsSettings(
+    Test / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .dependsOn(core % Test, scalacheck % Test)
+  .enablePlugins(NoPublishPlugin)
