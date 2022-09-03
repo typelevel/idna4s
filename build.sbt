@@ -34,17 +34,19 @@ ThisBuild / wildcardImport := {
 
 // Projects
 
+lazy val projectName: String = "idna4s"
+
 lazy val root = tlCrossRootProject
   .aggregate(
-    bootstring
+    core
   )
-  .settings(name := "idna4s")
+  .settings(name := projectName)
 
-lazy val bootstring = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
-  .in(file("bootstring"))
+  .in(file("core"))
   .settings(
-    name := "idna4s-bootstring",
+    name := s"${projectName}-core",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-core" % catsV
     ),
@@ -63,7 +65,11 @@ lazy val bootstring = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       "org.scalameta" %%% "munit-scalacheck" % munitV
     ).map(_ % Test),
     console / initialCommands := {
-      List("cats.", "cats.syntax.all.", "org.typelevel.idna4s.bootstring.")
+      List(
+        "cats.",
+        "cats.syntax.all.",
+        "org.typelevel.idna4s.core.",
+        "org.typelevel.idna4s.core.syntax.all.")
         .map(value => s"import ${value}${wildcardImport.value}")
         .mkString("\n")
     },
