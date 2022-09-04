@@ -39,7 +39,7 @@ trait ScalaCheckInstances extends Serializable {
   /**
    * Generator for int values which are not Unicode code points.
    */
-  def genNonCodePoint: Gen[Int] =
+  final def genNonCodePoint: Gen[Int] =
     Gen.oneOf(
       Gen.choose(Int.MinValue, -1),
       Gen.choose(Character.MAX_CODE_POINT + 1, Int.MaxValue)
