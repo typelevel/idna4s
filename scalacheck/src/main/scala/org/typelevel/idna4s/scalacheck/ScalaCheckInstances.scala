@@ -25,7 +25,7 @@ import org.scalacheck._
 import org.scalacheck.Gen.Choose
 import org.typelevel.idna4s.core._
 
-trait ScalaCheckInstances extends Serializable {
+private[scalacheck] trait ScalaCheckInstances extends Serializable {
 
   implicit final def chooseCodePoint: Choose[CodePoint] =
     Choose.xmap[Int, CodePoint](CodePoint.unsafeFromInt, _.value)
