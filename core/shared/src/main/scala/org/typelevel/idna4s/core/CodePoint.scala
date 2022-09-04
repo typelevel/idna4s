@@ -55,24 +55,23 @@ import cats.syntax.all._
  * @see
  *   [[https://www.unicode.org/reports/tr36/ Unicode Security Considerations]]
  */
-final case class CodePoint private (value: Int) extends AnyVal {
-  // final
+final class CodePoint private (val value: Int) extends AnyVal {
 
   /**
    * The number of UTF-16 bytes needed to represent this code point. UTF-16 encodes code points
    * >= 0x10000 as surrogate pairs, requiring two bytes to represent.
    */
-  final def charCount: Int =
+  def charCount: Int =
     if (value >= 0x10000) 2 else 1
 
   /**
    * Convert this code point to a list of utf-16 bytes (char values), either size 1 or 2
    * depending on if this code point is represents a surrogate pair in UTF-16.
    */
-  final def toChars: List[Char] =
+  def toChars: List[Char] =
     Character.toChars(value).toList
 
-  final override def toString: String =
+  override def toString: String =
     CodePoint
       .nameForCodePoint(this)
       .fold(
@@ -94,6 +93,9 @@ object CodePoint extends CodePointPlatform {
 
   val MinValue: CodePoint = CodePoint(0)
   val MaxValue: CodePoint = CodePoint(Character.MAX_CODE_POINT)
+
+  def unapply(value: CodePoint): Some[Int] =
+    Some(value.value)
 
   private def apply(value: Int): CodePoint =
     new CodePoint(value)
