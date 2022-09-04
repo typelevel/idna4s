@@ -28,7 +28,7 @@ import cats.syntax.all._
 /**
  * A newtype for representing a Unicode code point.
  *
- * Unicode code points are a integral values from [0, 0x10FFF].
+ * Unicode code points are a integral values from [0, 0x10FFFF].
  *
  * This type is not (and should not) generally be used in critical path performance sensitive
  * code. It is mostly useful for generating error information, testing, and for some performance
