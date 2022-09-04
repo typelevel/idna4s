@@ -30,9 +30,9 @@ import cats.syntax.all._
  *
  * Unicode code points are a integral values from [0, 0x10FFF].
  *
- * This type is not (and should not) generally in critical path performance sensitive code. It
- * is mostly useful for generating error information, testing, and for some performance
- * insensitive methods which operate only a single code point. In particular for errors messages
+ * This type is not (and should not) generally be used in critical path performance sensitive
+ * code. It is mostly useful for generating error information, testing, and for some performance
+ * insensitive methods which operate only a single code point. In particular for error messages
  * where we generally should not render arbitrary code points as they may influence the output
  * text in ways we do not anticipate, such as bidi scripts or where the code point in isolation
  * is not able to be rendered at all.
@@ -65,7 +65,7 @@ final class CodePoint private (val value: Int) extends AnyVal {
     if (value >= 0x10000) 2 else 1
 
   /**
-   * Convert this code point to a list of utf-16 bytes (char values), either size 1 or 2
+   * Convert this code point to a list of UTF-16 bytes (char values), either size 1 or 2
    * depending on if this code point is represents a surrogate pair in UTF-16.
    */
   def toChars: List[Char] =
@@ -113,7 +113,7 @@ object CodePoint extends CodePointPlatform {
     }
 
   /**
-   * Attempt to create a [[CodePoint]] from an int, yield an error if the int is not a valid
+   * Attempt to create a [[CodePoint]] from an int, yielding an error if the int is not a valid
    * Unicode code point.
    */
   def fromInt(value: Int): Either[String, CodePoint] =
