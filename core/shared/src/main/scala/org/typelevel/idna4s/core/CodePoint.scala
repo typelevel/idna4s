@@ -37,16 +37,25 @@ import cats.syntax.all._
  * text in ways we do not anticipate, such as bidi scripts or where the code point in isolation
  * is not able to be rendered at all.
  *
+ * The `toString` for this class does ''not'' render the `String` representation of this code
+ * point, it renders the base 10 and base 16 value of the code point, as well as the number of
+ * UTF-16 bytes (char values) needed to represent this code point and if possible a prose
+ * description of the code point. The reason for not rendering the `String` representation is
+ * that this type is often used in error cases where the code point will have no valid `String`
+ * representation, or where that representation is not meaningful, or where that representation
+ * could mangle the error message (as noted above).
+ *
+ * For example,
+ *
+ * {{{
+ * scala> CodePoint.fromChar('a')
+ * val res0: Either[String, org.typelevel.idna4s.core.CodePoint] = Right(CodePoint(value = 97, hexValue = 0x0061, name = LATIN SMALL LETTER A, charCount = 1))
+ * }}}
+ *
  * @see
  *   [[https://www.unicode.org/reports/tr36/ Unicode Security Considerations]]
  */
-sealed abstract class CodePoint extends Serializable {
-
-  /**
-   * The integral value of the code point.
-   */
-  def value: Int
-
+final case class CodePoint private (value: Int) extends AnyVal {
   // final
 
   /**
@@ -79,13 +88,15 @@ sealed abstract class CodePoint extends Serializable {
 // for it so we can at least have it on the JVM.
 
 object CodePoint extends CodePointPlatform {
-  final private[this] case class CodePointImpl(override val value: Int) extends CodePoint
 
   private def intToHex(value: Int): String =
     String.format("0x%04X", Integer.valueOf(value))
 
-  val MinValue: CodePoint = CodePointImpl(0)
-  val MaxValue: CodePoint = CodePointImpl(Character.MAX_CODE_POINT)
+  val MinValue: CodePoint = CodePoint(0)
+  val MaxValue: CodePoint = CodePoint(Character.MAX_CODE_POINT)
+
+  private def apply(value: Int): CodePoint =
+    new CodePoint(value)
 
   /**
    * Attempt to create a [[CodePoint]] from an int, throwing an exception if the int is not a
@@ -96,7 +107,7 @@ object CodePoint extends CodePointPlatform {
       throw new IllegalArgumentException(
         s"Given integral value is not a valid Unicode code point: ${intToHex(value)}")
     } else {
-      CodePointImpl(value)
+      CodePoint(value)
     }
 
   /**
@@ -118,7 +129,7 @@ object CodePoint extends CodePointPlatform {
         s"Char values which are part of a UTF-16 surrogate pair do not represent complete Unicode code points: ${intToHex(
           value.toInt)}")
     } else {
-      CodePointImpl(value.toInt)
+      CodePoint(value.toInt)
     }
 
   /**
@@ -150,7 +161,12 @@ object CodePoint extends CodePointPlatform {
    * Base 10 and base 16 numbers are valid. Base 16 values must be prefixed with "0x" or "0X".
    */
   def fromString(value: String): Either[String, CodePoint] =
-    Either.catchNonFatal(unsafeFromString(value)).leftMap(_.getLocalizedMessage)
+    Either.catchNonFatal(unsafeFromString(value)).leftMap {
+      case _: NumberFormatException =>
+        "Given value is not a valid non-negative integral value"
+      case e =>
+        e.getLocalizedMessage
+    }
 
   implicit val hashAndOrderForCodePoint: Hash[CodePoint] with Order[CodePoint] =
     new Hash[CodePoint] with Order[CodePoint] {

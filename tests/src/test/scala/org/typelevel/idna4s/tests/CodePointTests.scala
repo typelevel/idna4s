@@ -21,13 +21,14 @@
 
 package org.typelevel.idna4s.tests
 
-import org.scalacheck._
-import org.scalacheck.Prop._
-import scala.annotation.tailrec
 import cats.kernel.laws.discipline._
 import munit._
+import org.scalacheck.Prop._
+import org.scalacheck._
 import org.typelevel.idna4s.core._
+import org.typelevel.idna4s.core.syntax.all._
 import org.typelevel.idna4s.scalacheck.all._
+import scala.annotation.tailrec
 
 final class CodePointTests extends DisciplineSuite {
 
@@ -119,6 +120,33 @@ final class CodePointTests extends DisciplineSuite {
     forAll(Gen.choose(Character.MIN_SURROGATE, Char.MaxValue))(c =>
       Prop(CodePoint.fromChar(c).isLeft) :| "CodePoint.fromChar fails")
   )
+
+  test("Literal syntax for valid code points should compile") {
+    assertEquals(codePoint"0", CodePoint.unsafeFromInt(0))
+    assertEquals(codePoint"0x0", CodePoint.unsafeFromInt(0))
+    assertEquals(codePoint"0X0", CodePoint.unsafeFromInt(0))
+  }
+
+  test("Literal syntax for invalid literals should not compile") {
+    compileErrors("""codePoint"DERP"""").contains(
+      "Given value is not a valid non-negative integral value")
+    compileErrors("""codePoint"F"""").contains(
+      "Given value is not a valid non-negative integral value")
+  }
+
+  test("CodePoint.toString should not throw any NPEs") {
+    @tailrec
+    def loop(i: Int): Unit =
+      if (i > Character.MAX_CODE_POINT) {
+        ()
+      } else {
+        assert(CodePoint.unsafeFromInt(i).toString.size > 0)
+
+        loop(i + 1)
+      }
+
+    loop(0)
+  }
 
   // Laws //
 

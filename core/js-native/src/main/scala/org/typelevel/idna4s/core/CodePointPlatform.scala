@@ -25,7 +25,7 @@ import scala.annotation.nowarn
 
 private[core] trait CodePointPlatform {
 
-  @nowarn("cat=unused")
+  @nowarn("msg=never used")
   private[core] def nameForCodePoint(codePoint: CodePoint): Option[String] =
     None
 }

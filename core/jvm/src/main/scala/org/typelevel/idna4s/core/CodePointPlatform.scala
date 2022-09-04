@@ -24,5 +24,5 @@ package org.typelevel.idna4s.core
 private[core] trait CodePointPlatform {
 
   private[core] def nameForCodePoint(codePoint: CodePoint): Option[String] =
-    Some(Character.getName(codePoint.value))
+    Option(Character.getName(codePoint.value))
 }

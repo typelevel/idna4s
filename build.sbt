@@ -124,8 +124,5 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     },
     consoleQuick / initialCommands := ""
   )
-  .jsSettings(
-    Test / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
-  )
   .dependsOn(core % Test, scalacheck % Test)
   .enablePlugins(NoPublishPlugin)
