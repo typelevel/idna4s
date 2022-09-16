@@ -173,7 +173,7 @@ object BootstringParams {
       errors =>
         throw new IllegalArgumentException(
           s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(
-            ", ")}"""),
+              ", ")}"""),
       identity
     )
 
@@ -200,7 +200,7 @@ object BootstringParams {
       errors =>
         throw new IllegalArgumentException(
           s"""Error(s) encountered when building BootstringParams: ${errors.mkString_(
-            ", ")}"""),
+              ", ")}"""),
       identity
     )
 

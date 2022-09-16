@@ -78,7 +78,7 @@ final class CodePoint private (val value: Int) extends AnyVal {
         s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(value)}, charCount = ${charCount})"
       )(name =>
         s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(
-          value)}, name = ${name}, charCount = ${charCount})")
+            value)}, name = ${name}, charCount = ${charCount})")
 }
 
 // CodePointPlatform provides a nameForCodePoint method. This uses the
@@ -129,7 +129,7 @@ object CodePoint extends CodePointPlatform {
     if (value >= Character.MIN_SURROGATE) {
       throw new IllegalArgumentException(
         s"Char values which are part of a UTF-16 surrogate pair do not represent complete Unicode code points: ${intToHex(
-          value.toInt)}")
+            value.toInt)}")
     } else {
       CodePoint(value.toInt)
     }
