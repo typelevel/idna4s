@@ -73,10 +73,11 @@ abstract private[uts46] class CodePointMapperBase {
 
 object CodePointMapper extends GeneratedCodePointMapper {
 
-  /** A representation of `mapped`, but it includes mapping for the sentinel
-    * values so that we can quickly determine which secondary method to call
-    * in the even the code point is not in the `mapped` set.
-    */
+  /**
+   * A representation of `mapped`, but it includes mapping for the sentinel values so that we
+   * can quickly determine which secondary method to call in the even the code point is not in
+   * the `mapped` set.
+   */
   final private val mappedWithSentinels: IntMap[Int] =
     List[(Set[Int], Int)](
       validAlways -> VALID,
