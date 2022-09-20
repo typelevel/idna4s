@@ -677,7 +677,7 @@ object UTS46IDNAMappingTable {
             (List(q"""${rangeInclusiveTree(value)}"""), Nil)
           })
 
-        q"List[Range](..$ranges).foldLeft[BitSet](BitSet(..$singles)){case (acc, value) => value.foldLeft[BitSet](acc)(_.incl(_))}"
+        q"List[Range](..$ranges).foldLeft[BitSet](BitSet(..$singles)){case (acc, value) => value.foldLeft[BitSet](acc)(_ + _)}"
       }
 
       // Convert a mapping of code point ranges to terms, usually Int, or
