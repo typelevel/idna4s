@@ -294,7 +294,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
   def unsafeMapIntCodePoint(codePoint: Int): Either[String, CodePointStatus] =
     CodePoint.fromInt(codePoint).map(mapCodePoint)
 
-  private val ReplacementCharacter: Int =
+  final private val ReplacementCharacter =
     0xfffd
 
   sealed abstract class MappingError extends Serializable {
