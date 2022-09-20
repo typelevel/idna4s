@@ -714,7 +714,7 @@ object UTS46IDNAMappingTable {
           name: String,
           codePointRanges: SortedSet[(CodePointRange, Option[Comment])]): Defn.Val =
         q"""protected override final val ${Pat.Var(Term.Name(name))} = ${asBitSet(
-          codePointRanges.map(_._1).toList)}"""
+            codePointRanges.map(_._1).toList)}"""
 
       // Create a val definition for one of the methods which returns an IntMap.
       def intMapMethod(name: String, rhs: Term): Defn.Val =
