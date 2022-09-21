@@ -26,6 +26,21 @@ import scala.meta._
 object UTS46CodeGen {
 
   /**
+   * Download the UTS-46 lookup table sources and generate the UTS-46 lookup table code. This
+   * will use the "latest" release from Unicode.
+   *
+   * @param dir
+   *   The base directory that the generated file will be in.
+   */
+  def generate(dir: File): Seq[File] =
+    Rows
+      .fromUnicodeURL
+      .fold(
+        e => throw e,
+        rows => List(generateFromRows(rows, dir))
+      )
+
+  /**
    * Generate the UTS-46 lookup table code.
    *
    * @param rows
@@ -42,21 +57,6 @@ object UTS46CodeGen {
 
     outputFile
   }
-
-  /**
-   * Download the UTS-46 lookup table sources and generate the UTS-46 lookup table code. This
-   * will use the "latest" release from Unicode.
-   *
-   * @param dir
-   *   The base directory that the generated file will be in.
-   */
-  def generate(dir: File): Seq[File] =
-    Rows
-      .fromUnicodeURL
-      .fold(
-        e => throw e,
-        rows => List(generateFromRows(rows, dir))
-      )
 
   // Orphan instances for Ordering of NonEmptyList and List
 
