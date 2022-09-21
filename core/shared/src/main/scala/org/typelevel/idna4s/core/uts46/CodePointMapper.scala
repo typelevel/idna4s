@@ -70,6 +70,18 @@ abstract private[uts46] class CodePointMapperBase {
 
   protected def mapped: IntMap[Int]
 
+  /**
+   * The Unicode version the code point mapping functions target.
+   *
+   * @note
+   *   UTS-46 is backwards compatible with future versions of Unicode. The only part of the
+   *   mapping operation which can change between Unicode revisions is the disallowed character
+   *   set. This includes the STD3 Valid and STD3 mapped variants. In other words, code points
+   *   which were disallowed by some prior Unicode version may be made allowed in some future
+   *   Unicode version or they may still be disallowed but have their mappings under STD3
+   *   changed or they may be considered ''valid under STD3 only'', when they were formerlly
+   *   disllowed under STD3.
+   */
   def unicodeVersion: String
 }
 

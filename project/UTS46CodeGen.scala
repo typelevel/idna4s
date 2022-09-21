@@ -439,9 +439,6 @@ object UTS46CodeGen {
 
     implicit def orderingInstance: Ordering[Row] = orderInstance.toOrdering
 
-    def apply(codePointRange: CodePointRange, codePointStatus: CodePointStatus): Row =
-      Row(codePointRange, codePointStatus)
-
     // Regexes used to extract out a single input code point or a range of
     // input code points.
     private val rangeRegex: Regex =
