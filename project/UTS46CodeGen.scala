@@ -713,12 +713,8 @@ object UTS46CodeGen {
          }"""
       }
 
-      // Create a val definition for one of the methods which returns a BitSet.
-      def bitSetMethod(name: String, rhs: Term): Defn.Val =
-        q"protected override final lazy val ${Pat.Var(Term.Name(name))} = $rhs"
-
-      // Create a val definition for one of the methods which returns an IntMap.
-      def intMapMethod(name: String, rhs: Term): Defn.Val =
+      // Create a val definition for one of the methods
+      def emitMethod(name: String, rhs: Term): Defn.Val =
         q"protected override final lazy val ${Pat.Var(Term.Name(name))} = $rhs"
 
       // For a set of code points which map to a single result code point,
@@ -747,43 +743,41 @@ object UTS46CodeGen {
       // Create the expressions for the various methods we are overriding.
 
       def validAlwaysMethod: Defn.Val =
-        bitSetMethod("validAlways", asBitSetTerm(validAlways))
+        emitMethod("validAlways", asBitSetTerm(validAlways))
 
       def validNV8Method: Defn.Val =
-        bitSetMethod("validNV8", asBitSetTerm(validNV8))
+        emitMethod("validNV8", asBitSetTerm(validNV8))
 
       def validXV8Method: Defn.Val =
-        bitSetMethod("validXV8", asBitSetTerm(validXV8))
+        emitMethod("validXV8", asBitSetTerm(validXV8))
 
       def ignoredMethod: Defn.Val =
-        bitSetMethod("ignored", asBitSetTerm(ignored))
+        emitMethod("ignored", asBitSetTerm(ignored))
 
       def disallowedMethod: Defn.Val =
-        bitSetMethod("disallowed", asBitSetTerm(disallowed))
+        emitMethod("disallowed", asBitSetTerm(disallowed))
 
       def deviationIgnoredMethod: Defn.Val =
-        bitSetMethod("deviationIgnored", asBitSetTerm(deviationIgnored))
+        emitMethod("deviationIgnored", asBitSetTerm(deviationIgnored))
 
       def disallowedSTD3ValidMethod: Defn.Val =
-        bitSetMethod("disallowedSTD3Valid", asBitSetTerm(disallowedSTD3Valid))
+        emitMethod("disallowedSTD3Valid", asBitSetTerm(disallowedSTD3Valid))
 
       def mappedMultiMethod: Defn.Val =
         // q"protected override final val mappedMultiCodePoints: IntMap[NonEmptyList[Int]] = ???"
-        intMapMethod("mappedMultiCodePoints", multiMappingToTrees(mappedMulti))
+        emitMethod("mappedMultiCodePoints", multiMappingToTrees(mappedMulti))
 
       def deviationMappedMethod: Defn.Val =
-        intMapMethod("deviationMapped", singleMappingToTrees(deviationMapped))
+        emitMethod("deviationMapped", singleMappingToTrees(deviationMapped))
 
       def deviationMultiMappedMethod: Defn.Val =
-        intMapMethod("deviationMultiMapped", multiMappingToTrees(deviationMultiMapped))
+        emitMethod("deviationMultiMapped", multiMappingToTrees(deviationMultiMapped))
 
       def disallowedSTD3MappedMethod: Defn.Val =
-        intMapMethod("disallowedSTD3Mapped", singleMappingToTrees(disallowedSTD3Mapped))
+        emitMethod("disallowedSTD3Mapped", singleMappingToTrees(disallowedSTD3Mapped))
 
       def disallowedSTD3MultiMappedMethod: Defn.Val =
-        intMapMethod(
-          "disallowedSTD3MultiMapped",
-          multiMappingToTrees(disallowedSTD3MultiMapped))
+        emitMethod("disallowedSTD3MultiMapped", multiMappingToTrees(disallowedSTD3MultiMapped))
 
       // Note: Things are different for the `def mapped: IntMap[Int]`
       // method. This is by far the largest method we will be generating. It
