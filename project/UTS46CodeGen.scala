@@ -25,6 +25,39 @@ import scala.meta._
  */
 object UTS46CodeGen {
 
+  /**
+   * Generate the UTS-46 lookup table code.
+   *
+   * @param rows
+   *   The parsed rows representing the source UTS-46 lookup tables for step 1 of processing.
+   *
+   * @param dir
+   *   The base directory that the generated file will be in.
+   */
+  private def generateFromRows(rows: Rows, dir: File): File = {
+    val outputFile: File =
+      dir / "org" / "typelevel" / "idna4s" / "core" / "uts46" / "GeneratedCodePointMapper.scala"
+
+    IO.write(outputFile, rows.asSourceFile)
+
+    outputFile
+  }
+
+  /**
+   * Download the UTS-46 lookup table sources and generate the UTS-46 lookup table code. This
+   * will use the "latest" release from Unicode.
+   *
+   * @param dir
+   *   The base directory that the generated file will be in.
+   */
+  def generate(dir: File): Seq[File] =
+    Rows
+      .fromUnicodeURL
+      .fold(
+        e => throw e,
+        rows => List(generateFromRows(rows, dir))
+      )
+
   // Orphan instances for Ordering of NonEmptyList and List
 
   implicit private def orphanOrderingForNonEmptyList[A: Order]: Ordering[NonEmptyList[A]] =
@@ -923,37 +956,4 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
     def fromUnicodeURL(version: UnicodeVersion): Try[Rows] =
       fromUnicodeURL(Some(version))
   }
-
-  /**
-   * Generate the UTS-46 lookup table code.
-   *
-   * @param rows
-   *   The parsed rows representing the source UTS-46 lookup tables for step 1 of processing.
-   *
-   * @param dir
-   *   The base directory that the generated file will be in.
-   */
-  private def generateFromRows(rows: Rows, dir: File): File = {
-    val outputFile: File =
-      dir / "org" / "typelevel" / "idna4s" / "core" / "uts46" / "GeneratedCodePointMapper.scala"
-
-    IO.write(outputFile, rows.asSourceFile)
-
-    outputFile
-  }
-
-  /**
-   * Download the UTS-46 lookup table sources and generate the UTS-46 lookup table code. This
-   * will use the "latest" release from Unicode.
-   *
-   * @param dir
-   *   The base directory that the generated file will be in.
-   */
-  def generate(dir: File): Seq[File] =
-    Rows
-      .fromUnicodeURL
-      .fold(
-        e => throw e,
-        rows => List(generateFromRows(rows, dir))
-      )
 }
