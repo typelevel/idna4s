@@ -386,24 +386,11 @@ object UTS46IDNAMappingTable {
   }
 
   /**
-   * Newtype for a comment string.
-   */
-  final private case class Comment(value: String)
-
-  private object Comment {
-    implicit val orderInstance: Order[Comment] =
-      Order.by(_.value)
-
-    implicit def orderingInstance: Ordering[Comment] = orderInstance.toOrdering
-  }
-
-  /**
    * A type representing a single row parsed from the UTS-46 lookup tables.
    */
   final private case class Row(
       codePointRange: CodePointRange,
-      codePointStatus: CodePointStatus,
-      comment: Option[Comment]
+      codePointStatus: CodePointStatus
   )
 
   private object Row {
@@ -412,23 +399,15 @@ object UTS46IDNAMappingTable {
         override def compare(x: Row, y: Row): Int =
           x.codePointRange.compare(y.codePointRange) match {
             case 0 =>
-              x.codePointStatus.compare(y.codePointStatus) match {
-                case 0 =>
-                  x.comment.compare(y.comment)
-                case otherwise =>
-                  otherwise
-              }
+              x.codePointStatus.compare(y.codePointStatus)
             case otherwise => otherwise
           }
       }
 
     implicit def orderingInstance: Ordering[Row] = orderInstance.toOrdering
 
-    def apply(
-        codePointRange: CodePointRange,
-        codePointStatus: CodePointStatus,
-        comment: Comment): Row =
-      Row(codePointRange, codePointStatus, Some(comment))
+    def apply(codePointRange: CodePointRange, codePointStatus: CodePointStatus): Row =
+      Row(codePointRange, codePointStatus)
 
     // Regexes used to extract out a single input code point or a range of
     // input code points.
@@ -457,25 +436,24 @@ object UTS46IDNAMappingTable {
      */
     def fromString(value: String): Either[String, Row] =
       value.split("""[;#]""").toList match {
-        case input :: status :: comment :: Nil =>
+        case input :: status :: _ :: Nil =>
           for {
             input  <- parseInputCodePoints(input)
             status <- CodePointStatus.from(status, MappingValue.empty, None)
-          } yield Row(input, status, Comment(comment))
-        case input :: status :: mapping :: comment :: Nil =>
+          } yield Row(input, status)
+        case input :: status :: mapping :: _ :: Nil =>
           for {
             input   <- parseInputCodePoints(input)
             mapping <- MappingValue.fromString(mapping)
             status  <- CodePointStatus.from(status, mapping, None)
-          } yield Row(input, status, Comment(comment))
-        case input :: status :: mapping :: idna2008Status :: comment :: Nil
-            if mapping.trim.isEmpty =>
+          } yield Row(input, status)
+        case input :: status :: mapping :: idna2008Status :: _ :: Nil if mapping.trim.isEmpty =>
           for {
             input          <- parseInputCodePoints(input)
             mapping        <- MappingValue.fromString(mapping)
             idna2008Status <- IDNA2008Status.fromString(idna2008Status)
             status         <- CodePointStatus.from(status, mapping, Some(idna2008Status))
-          } yield Row(input, status, Comment(comment))
+          } yield Row(input, status)
         case _ =>
           Left(s"Unable to parse row: ${value}")
       }
@@ -492,21 +470,19 @@ object UTS46IDNAMappingTable {
    */
   final private case class Rows(
       version: UnicodeVersion,
-      deviationIgnored: SortedSet[(CodePointRange, Option[Comment])],
-      deviationMapped: SortedSet[(CodePointRange, CodePoint, Option[Comment])],
-      deviationMultiMapped: SortedSet[
-        (CodePointRange, NonEmptyList[CodePoint], Option[Comment])],
-      disallowed: SortedSet[(CodePointRange, Option[Comment])],
-      disallowedSTD3Mapped: SortedSet[(CodePointRange, CodePoint, Option[Comment])],
-      disallowedSTD3MultiMapped: SortedSet[
-        (CodePointRange, NonEmptyList[CodePoint], Option[Comment])],
-      disallowedSTD3Valid: SortedSet[(CodePointRange, Option[Comment])],
-      ignored: SortedSet[(CodePointRange, Option[Comment])],
-      mapped: SortedSet[(CodePointRange, CodePoint, Option[Comment])],
-      mappedMulti: SortedSet[(CodePointRange, NonEmptyList[CodePoint], Option[Comment])],
-      validAlways: SortedSet[(CodePointRange, Option[Comment])],
-      validNV8: SortedSet[(CodePointRange, Option[Comment])],
-      validXV8: SortedSet[(CodePointRange, Option[Comment])]
+      deviationIgnored: SortedSet[CodePointRange],
+      deviationMapped: SortedSet[(CodePointRange, CodePoint)],
+      deviationMultiMapped: SortedSet[(CodePointRange, NonEmptyList[CodePoint])],
+      disallowed: SortedSet[CodePointRange],
+      disallowedSTD3Mapped: SortedSet[(CodePointRange, CodePoint)],
+      disallowedSTD3MultiMapped: SortedSet[(CodePointRange, NonEmptyList[CodePoint])],
+      disallowedSTD3Valid: SortedSet[CodePointRange],
+      ignored: SortedSet[CodePointRange],
+      mapped: SortedSet[(CodePointRange, CodePoint)],
+      mappedMulti: SortedSet[(CodePointRange, NonEmptyList[CodePoint])],
+      validAlways: SortedSet[CodePointRange],
+      validNV8: SortedSet[CodePointRange],
+      validXV8: SortedSet[CodePointRange]
   ) {
 
     /**
@@ -514,32 +490,29 @@ object UTS46IDNAMappingTable {
      * based on the `CodePointStatus` value.
      */
     def addRow(row: Row): Rows =
-      addRow(row.codePointRange, row.codePointStatus, row.comment)
+      addRow(row.codePointRange, row.codePointStatus)
 
     /**
      * Add a row. This method will determine the appropriate set the row should be inserted into
      * based on the `CodePointStatus` value.
      */
-    def addRow(
-        codePointRange: CodePointRange,
-        codePointStatus: CodePointStatus,
-        comment: Option[Comment]): Rows = {
+    def addRow(codePointRange: CodePointRange, codePointStatus: CodePointStatus): Rows = {
       import CodePointStatus._
       codePointStatus match {
         case codePointStatus: Valid =>
-          addValid(codePointRange, codePointStatus.idna2008Status, comment)
+          addValid(codePointRange, codePointStatus.idna2008Status)
         case Ignored =>
-          addIgnored(codePointRange, comment)
+          addIgnored(codePointRange)
         case codePointStatus: Mapped =>
-          addMapped(codePointRange, codePointStatus.mapping, comment)
+          addMapped(codePointRange, codePointStatus.mapping)
         case codePointStatus: Deviation =>
-          addDeviation(codePointRange, codePointStatus.mapping, comment)
+          addDeviation(codePointRange, codePointStatus.mapping)
         case Disallowed =>
-          addDisallowed(codePointRange, comment)
+          addDisallowed(codePointRange)
         case Disallowed_STD3_Valid =>
-          addDisallowedSTD3Valid(codePointRange, comment)
+          addDisallowedSTD3Valid(codePointRange)
         case codePointStatus: Disallowed_STD3_Mapped =>
-          addDisallowedSTD3Mapped(codePointRange, codePointStatus.mapping, comment)
+          addDisallowedSTD3Mapped(codePointRange, codePointStatus.mapping)
       }
     }
 
@@ -547,82 +520,71 @@ object UTS46IDNAMappingTable {
      * Add a valid code point range to the set of `Rows`. The appropriate `SortedSet` to update,
      * always, NV8, or XV8 will be determined.
      */
-    def addValid(
-        codePointRange: CodePointRange,
-        idna2008Status: Option[IDNA2008Status],
-        comment: Option[Comment]): Rows =
+    def addValid(codePointRange: CodePointRange, idna2008Status: Option[IDNA2008Status]): Rows =
       idna2008Status.fold(
-        this.copy(validAlways = validAlways + ((codePointRange, comment)))
+        this.copy(validAlways = validAlways + codePointRange)
       ) {
         case IDNA2008Status.NV8 =>
-          this.copy(validNV8 = validNV8 + ((codePointRange, comment)))
+          this.copy(validNV8 = validNV8 + codePointRange)
         case IDNA2008Status.XV8 =>
-          this.copy(validXV8 = validXV8 + ((codePointRange, comment)))
+          this.copy(validXV8 = validXV8 + codePointRange)
       }
 
     /**
      * Add a code point range which is ignored in UTS46.
      */
-    def addIgnored(codePointRange: CodePointRange, comment: Option[Comment]): Rows =
-      this.copy(ignored = ignored + ((codePointRange, comment)))
+    def addIgnored(codePointRange: CodePointRange): Rows =
+      this.copy(ignored = ignored + codePointRange)
 
     /**
      * Add a code point range which is mapped to one or more alternative code points in UTS 46.
      */
-    def addMapped(
-        codePointRange: CodePointRange,
-        mapping: NonEmptyList[CodePoint],
-        comment: Option[Comment]): Rows =
+    def addMapped(codePointRange: CodePointRange, mapping: NonEmptyList[CodePoint]): Rows =
       if (mapping.size > 1) {
-        this.copy(mappedMulti = mappedMulti + ((codePointRange, mapping, comment)))
+        this.copy(mappedMulti = mappedMulti + ((codePointRange, mapping)))
       } else {
-        this.copy(mapped = mapped + ((codePointRange, mapping.head, comment)))
+        this.copy(mapped = mapped + ((codePointRange, mapping.head)))
       }
 
     /**
      * Add a deviation code point range which may map to zero or more alternative code points in
      * UTS 46.
      */
-    def addDeviation(
-        codePointRange: CodePointRange,
-        mapping: List[CodePoint],
-        comment: Option[Comment]): Rows =
+    def addDeviation(codePointRange: CodePointRange, mapping: List[CodePoint]): Rows =
       mapping match {
         case x :: Nil =>
-          this.copy(deviationMapped = deviationMapped + ((codePointRange, x, comment)))
+          this.copy(deviationMapped = deviationMapped + ((codePointRange, x)))
         case x :: xs =>
           this.copy(deviationMultiMapped =
-            deviationMultiMapped + ((codePointRange, NonEmptyList(x, xs), comment)))
+            deviationMultiMapped + ((codePointRange, NonEmptyList(x, xs))))
         case _ =>
-          this.copy(deviationIgnored = deviationIgnored + ((codePointRange, comment)))
+          this.copy(deviationIgnored = deviationIgnored + codePointRange)
       }
 
     /**
      * Add a disallowed code point range.
      */
-    def addDisallowed(codePointRange: CodePointRange, comment: Option[Comment]): Rows =
-      this.copy(disallowed = disallowed + ((codePointRange, comment)))
+    def addDisallowed(codePointRange: CodePointRange): Rows =
+      this.copy(disallowed = disallowed + codePointRange)
 
     /**
      * Add a code point range which is disallowed unless useStd3ASCIIRules is false.
      */
-    def addDisallowedSTD3Valid(codePointRange: CodePointRange, comment: Option[Comment]): Rows =
-      this.copy(disallowedSTD3Valid = disallowedSTD3Valid + ((codePointRange, comment)))
+    def addDisallowedSTD3Valid(codePointRange: CodePointRange): Rows =
+      this.copy(disallowedSTD3Valid = disallowedSTD3Valid + codePointRange)
 
     /**
      * Add a code point range, which may be mapped if useStd3ASCIIRules is false.
      */
     def addDisallowedSTD3Mapped(
         codePointRange: CodePointRange,
-        mapping: NonEmptyList[CodePoint],
-        comment: Option[Comment]): Rows =
+        mapping: NonEmptyList[CodePoint]): Rows =
       mapping.toList match {
         case x :: Nil =>
-          this
-            .copy(disallowedSTD3Mapped = disallowedSTD3Mapped + ((codePointRange, x, comment)))
+          this.copy(disallowedSTD3Mapped = disallowedSTD3Mapped + ((codePointRange, x)))
         case _ =>
           this.copy(disallowedSTD3MultiMapped =
-            disallowedSTD3MultiMapped + ((codePointRange, mapping, comment)))
+            disallowedSTD3MultiMapped + ((codePointRange, mapping)))
       }
 
     /**
@@ -710,11 +672,9 @@ object UTS46IDNAMappingTable {
       }
 
       // Create a val definition for one of the methods which returns a BitSet.
-      def bitSetMethod(
-          name: String,
-          codePointRanges: SortedSet[(CodePointRange, Option[Comment])]): Defn.Val =
+      def bitSetMethod(name: String, codePointRanges: SortedSet[CodePointRange]): Defn.Val =
         q"""protected override final val ${Pat.Var(Term.Name(name))} = ${asBitSet(
-            codePointRanges.map(_._1).toList)}"""
+            codePointRanges.toList)}"""
 
       // Create a val definition for one of the methods which returns an IntMap.
       def intMapMethod(name: String, rhs: Term): Defn.Val =
@@ -722,11 +682,10 @@ object UTS46IDNAMappingTable {
 
       // For a set of code points which map to a single result code point,
       // create the expression that yields an IntMap[Int] of that mapping.
-      def singleMappingToTrees(
-          value: SortedSet[(CodePointRange, CodePoint, Option[Comment])]): Term =
+      def singleMappingToTrees(value: SortedSet[(CodePointRange, CodePoint)]): Term =
         asIntMap(
           value.foldLeft(SortedMap.empty[CodePointRange, Term]) {
-            case (acc, (codePointRange, mapping, _)) =>
+            case (acc, (codePointRange, mapping)) =>
               acc + (codePointRange -> Lit.Int(mapping.value))
           },
           t"Int"
@@ -735,10 +694,10 @@ object UTS46IDNAMappingTable {
       // For a set of code points which map to multiple code points, create
       // the expression that yields an IntMap[NonEmptyList[Int]].
       def multiMappingToTrees(
-          value: SortedSet[(CodePointRange, NonEmptyList[CodePoint], Option[Comment])]): Term =
+          value: SortedSet[(CodePointRange, NonEmptyList[CodePoint])]): Term =
         asIntMap(
           value.foldLeft(SortedMap.empty[CodePointRange, Term]) {
-            case (acc, (codePointRange, mapping, _)) =>
+            case (acc, (codePointRange, mapping)) =>
               acc + (codePointRange -> nelToTree(mapping.map(_.value)))
           },
           nelOfIntType
