@@ -662,14 +662,19 @@ object UTS46CodeGen {
       // several valid encodings which create too deeply nested ASTs which
       // cause the ScalaMeta printer to crash.
       def asBitSetTerm(fa: SortedSet[CodePointRange]): Term = {
-        val (ranges, singles): (List[Term], List[Term]) = fa.foldMap(value =>
-          if (value.size === 1) {
-            (Nil, List(q"""${Lit.Int(value.lower.value)}"""))
+        val terms: List[Term] = fa.foldMap(value =>
+          List(if (value.size === 1) {
+            q"mutableBitSet += ${Lit.Int(value.lower.value)}"
           } else {
-            (List(q"""${rangeInclusiveTree(value)}"""), Nil)
-          })
+            q"mutableBitSet ++= ${rangeInclusiveTree(value)}"
+          }))
 
-        q"List[Range](..$ranges).foldLeft[BitSet](BitSet(..$singles)){case (acc, value) => value.foldLeft[BitSet](acc)(_ + _)}"
+        q"""
+         val mutableBitSet: scala.collection.mutable.BitSet = scala.collection.mutable.BitSet.empty
+
+         ..$terms
+         BitSet.empty ++ mutableBitSet
+         """
       }
 
       // Convert a mapping of code point ranges to terms, usually Int, or
