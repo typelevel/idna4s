@@ -23,9 +23,10 @@ import scala.meta._
  * @see
  *   [[https://www.unicode.org/reports/tr46/#IDNA_Mapping_Table Section 5]]
  */
-object UTS46IDNAMappingTable {
+object UTS46CodeGen {
 
   // Orphan instances for Ordering of NonEmptyList and List
+
   implicit private def orphanOrderingForNonEmptyList[A: Order]: Ordering[NonEmptyList[A]] =
     Order[NonEmptyList[A]].toOrdering
 
@@ -631,7 +632,7 @@ object UTS46IDNAMappingTable {
       // Note: Care must be taken in how this is constructed. There are
       // several valid encodings which create too deeply nested ASTs which
       // cause the ScalaMeta printer to crash.
-      def asBitSet[F[_]: Foldable: Functor](fa: F[CodePointRange]): Term = {
+      def asBitSetTerm(fa: SortedSet[CodePointRange]): Term = {
         val (ranges, singles): (List[Term], List[Term]) = fa.foldMap(value =>
           if (value.size === 1) {
             (Nil, List(q"""${Lit.Int(value.lower.value)}"""))
@@ -649,7 +650,7 @@ object UTS46IDNAMappingTable {
       // Note: Care must be taken in how this is constructed. There are
       // several valid encodings which create too deeply nested ASTs which
       // cause the ScalaMeta printer to crash.
-      def asIntMap(fa: SortedMap[CodePointRange, Term], valueType: Type): Term = {
+      def asIntMapTerm(fa: SortedMap[CodePointRange, Term], valueType: Type): Term = {
         val (ranges, singles): (List[Term], List[Term]) =
           fa.foldLeft((List.empty[Term], List.empty[Term])) {
             case ((r, s), (codePointRange, result)) =>
@@ -672,18 +673,17 @@ object UTS46IDNAMappingTable {
       }
 
       // Create a val definition for one of the methods which returns a BitSet.
-      def bitSetMethod(name: String, codePointRanges: SortedSet[CodePointRange]): Defn.Val =
-        q"""protected override final val ${Pat.Var(Term.Name(name))} = ${asBitSet(
-            codePointRanges.toList)}"""
+      def bitSetMethod(name: String, rhs: Term): Defn.Val =
+        q"protected override final val ${Pat.Var(Term.Name(name))} = $rhs"
 
       // Create a val definition for one of the methods which returns an IntMap.
       def intMapMethod(name: String, rhs: Term): Defn.Val =
-        q"""protected override final val ${Pat.Var(Term.Name(name))} = $rhs"""
+        q"protected override final val ${Pat.Var(Term.Name(name))} = $rhs"
 
       // For a set of code points which map to a single result code point,
       // create the expression that yields an IntMap[Int] of that mapping.
       def singleMappingToTrees(value: SortedSet[(CodePointRange, CodePoint)]): Term =
-        asIntMap(
+        asIntMapTerm(
           value.foldLeft(SortedMap.empty[CodePointRange, Term]) {
             case (acc, (codePointRange, mapping)) =>
               acc + (codePointRange -> Lit.Int(mapping.value))
@@ -695,7 +695,7 @@ object UTS46IDNAMappingTable {
       // the expression that yields an IntMap[NonEmptyList[Int]].
       def multiMappingToTrees(
           value: SortedSet[(CodePointRange, NonEmptyList[CodePoint])]): Term =
-        asIntMap(
+        asIntMapTerm(
           value.foldLeft(SortedMap.empty[CodePointRange, Term]) {
             case (acc, (codePointRange, mapping)) =>
               acc + (codePointRange -> nelToTree(mapping.map(_.value)))
@@ -706,25 +706,25 @@ object UTS46IDNAMappingTable {
       // Create the expressions for the various methods we are overriding.
 
       def validAlwaysMethod: Defn.Val =
-        bitSetMethod("validAlways", validAlways)
+        bitSetMethod("validAlways", asBitSetTerm(validAlways))
 
       def validNV8Method: Defn.Val =
-        bitSetMethod("validNV8", validNV8)
+        bitSetMethod("validNV8", asBitSetTerm(validNV8))
 
       def validXV8Method: Defn.Val =
-        bitSetMethod("validXV8", validXV8)
+        bitSetMethod("validXV8", asBitSetTerm(validXV8))
 
       def ignoredMethod: Defn.Val =
-        bitSetMethod("ignored", ignored)
+        bitSetMethod("ignored", asBitSetTerm(ignored))
 
       def disallowedMethod: Defn.Val =
-        bitSetMethod("disallowed", disallowed)
+        bitSetMethod("disallowed", asBitSetTerm(disallowed))
 
       def deviationIgnoredMethod: Defn.Val =
-        bitSetMethod("deviationIgnored", deviationIgnored)
+        bitSetMethod("deviationIgnored", asBitSetTerm(deviationIgnored))
 
       def disallowedSTD3ValidMethod: Defn.Val =
-        bitSetMethod("disallowedSTD3Valid", disallowedSTD3Valid)
+        bitSetMethod("disallowedSTD3Valid", asBitSetTerm(disallowedSTD3Valid))
 
       def mappedMultiMethod: Defn.Val =
         // q"protected override final val mappedMultiCodePoints: IntMap[NonEmptyList[Int]] = ???"
