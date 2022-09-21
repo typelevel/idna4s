@@ -69,6 +69,8 @@ abstract private[uts46] class CodePointMapperBase {
   protected def deviationIgnored: BitSet
 
   protected def mapped: IntMap[Int]
+
+  def unicodeVersion: String
 }
 
 object CodePointMapper extends GeneratedCodePointMapper {

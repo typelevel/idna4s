@@ -813,6 +813,7 @@ import scala.collection.immutable.BitSet
 import cats.data.NonEmptyList
 
 private[uts46] abstract class GeneratedCodePointMapper0 extends CodePointMapperBase {
+  override final val unicodeVersion = ${Lit.String(version.value)}
   $mappedMultiMethod
   ..$mappedMethods
 }
