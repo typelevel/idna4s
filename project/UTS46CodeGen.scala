@@ -621,7 +621,6 @@ object UTS46CodeGen {
      * Create the AST for the generated file.
      */
     private def asSourceTree: Tree = {
-
       // The Type of a BitSet
       val bitSetType: Type =
         t"BitSet"
@@ -662,19 +661,27 @@ object UTS46CodeGen {
       // several valid encodings which create too deeply nested ASTs which
       // cause the ScalaMeta printer to crash.
       def asBitSetTerm(fa: SortedSet[CodePointRange]): Term = {
-        val terms: List[Term] = fa.foldMap(value =>
-          List(if (value.size === 1) {
-            q"mutableBitSet += ${Lit.Int(value.lower.value)}"
+        val (ranges, singles): (List[Term], List[Term]) = fa.foldMap(value =>
+          if (value.size < 10) {
+            // Unwrap relatively small ranges so we can create them all at
+            // once with a big BitSet literal. We don't do this for everything
+            // because we start running into method size limitations.
+            (
+              Nil,
+              Range.inclusive(value.lower.value, value.upper.value).foldLeft(List.empty[Term]) {
+                case (acc, value) => q"${Lit.Int(value)}" +: acc
+              })
           } else {
-            q"mutableBitSet ++= ${rangeInclusiveTree(value)}"
-          }))
+            (List(q"${rangeInclusiveTree(value)}"), Nil)
+          })
 
-        q"""
-         val mutableBitSet: scala.collection.mutable.BitSet = scala.collection.mutable.BitSet.empty
-
-         ..$terms
-         BitSet.empty ++ mutableBitSet
-         """
+        if (ranges.isEmpty && singles.isEmpty) {
+          q"BitSet.empty"
+        } else if (ranges.isEmpty) {
+          q"BitSet(..$singles)"
+        } else {
+          q"List(..$ranges).foldLeft(BitSet(..$singles)){case (acc, value) => value.foldLeft(acc)(_ + _)}"
+        }
       }
 
       // Convert a mapping of code point ranges to terms, usually Int, or
@@ -708,11 +715,11 @@ object UTS46CodeGen {
 
       // Create a val definition for one of the methods which returns a BitSet.
       def bitSetMethod(name: String, rhs: Term): Defn.Val =
-        q"protected override final val ${Pat.Var(Term.Name(name))} = $rhs"
+        q"protected override final lazy val ${Pat.Var(Term.Name(name))} = $rhs"
 
       // Create a val definition for one of the methods which returns an IntMap.
       def intMapMethod(name: String, rhs: Term): Defn.Val =
-        q"protected override final val ${Pat.Var(Term.Name(name))} = $rhs"
+        q"protected override final lazy val ${Pat.Var(Term.Name(name))} = $rhs"
 
       // For a set of code points which map to a single result code point,
       // create the expression that yields an IntMap[Int] of that mapping.
@@ -811,8 +818,8 @@ object UTS46CodeGen {
       source"""package org.typelevel.idna4s.core.uts46
 
 import scala.collection.immutable.IntMap
-import scala.collection.immutable.BitSet
 import cats.data.NonEmptyList
+import cats.collections.BitSet
 
 private[uts46] abstract class GeneratedCodePointMapper0 extends CodePointMapperBase {
   override final val unicodeVersion = ${Lit.String(version.value)}
