@@ -107,14 +107,13 @@ object UTS46CodeGen {
   /**
    * Newtype for a Unicode code point.
    */
-  sealed abstract private class CodePoint extends Serializable {
-    def value: Int
-
+  final private class CodePoint private (val value: Int) extends AnyVal {
     final override def toString: String = s"CodePoint(value = ${value})"
   }
 
   private object CodePoint {
-    final private[this] case class CodePointImpl(override val value: Int) extends CodePoint
+    private def apply(value: Int): CodePoint =
+      new CodePoint(value)
 
     def unsafeFromInt(value: Int): CodePoint =
       fromInt(value).fold(
@@ -126,7 +125,7 @@ object UTS46CodeGen {
       if (value < 0 || value > Character.MAX_CODE_POINT) {
         Left(s"Invalid code point: ${value}")
       } else {
-        Right(CodePointImpl(value))
+        Right(apply(value))
       }
 
     def fromHexString(value: String): Either[String, CodePoint] = {
