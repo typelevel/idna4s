@@ -678,9 +678,9 @@ object UTS46CodeGen {
         if (ranges.isEmpty && singles.isEmpty) {
           q"BitSet.empty"
         } else if (ranges.isEmpty) {
-          q"BitSet(..$singles)"
+          q"BitSet(..$singles).compact"
         } else {
-          q"List(..$ranges).foldLeft(BitSet(..$singles)){case (acc, value) => value.foldLeft(acc)(_ + _)}"
+          q"List(..$ranges).foldLeft(BitSet(..$singles)){case (acc, value) => value.foldLeft(acc)(_ + _)}.compact"
         }
       }
 
