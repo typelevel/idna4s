@@ -290,7 +290,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
     } else if (deviationMapped.contains(value)) {
       Deviation.one(CodePoint.unsafeFromInt(deviationMapped(value)))
     } else if (deviationMultiMapped.contains(value)) {
-      Deviation.of(deviationMultiMapped(codePoint.value).map(CodePoint.unsafeFromInt).toList)
+      Deviation.of(deviationMultiMapped(codePoint.value).map(CodePoint.unsafeFromInt))
     } else if (disallowed(value)) {
       Disallowed.instance
     } else if (disallowedSTD3Valid(value)) {
