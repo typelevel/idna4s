@@ -31,51 +31,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable.IntMap
 import scala.util.control.NoStackTrace
 
-/**
- * This is a base type which exists for the generated code.
- */
-abstract private[uts46] class CodePointMapperBase {
-  protected def validAlways: BitSet
-
-  protected def validNV8: BitSet
-
-  protected def validXV8: BitSet
-
-  protected def ignored: BitSet
-
-  protected def mappedMultiCodePoints: IntMap[NonEmptyList[Int]]
-
-  protected def deviationMapped: IntMap[Int]
-
-  protected def deviationMultiMapped: IntMap[NonEmptyList[Int]]
-
-  protected def disallowed: BitSet
-
-  protected def disallowedSTD3Valid: BitSet
-
-  protected def disallowedSTD3Mapped: IntMap[Int]
-
-  protected def disallowedSTD3MultiMapped: IntMap[NonEmptyList[Int]]
-
-  protected def deviationIgnored: BitSet
-
-  protected def mapped: IntMap[Int]
-
-  /**
-   * The Unicode version the code point mapping functions target.
-   *
-   * @note
-   *   UTS-46 is backwards compatible with future versions of Unicode. The only part of the
-   *   mapping operation which can change between Unicode revisions is the disallowed character
-   *   set. This includes the STD3 Valid and STD3 mapped variants. In other words, code points
-   *   which were disallowed by some prior Unicode version may be made allowed in some future
-   *   Unicode version or they may still be disallowed but have their mappings under STD3
-   *   changed or they may be considered ''valid under STD3 only'', when they were formerlly
-   *   disllowed under STD3.
-   */
-  def unicodeVersion: String
-}
-
 object CodePointMapper extends GeneratedCodePointMapper {
 
   /**
@@ -446,4 +401,49 @@ object CodePointMapper extends GeneratedCodePointMapper {
    */
   final private val ReplacementCharacter =
     0xfffd
+}
+
+/**
+ * This is a base type which exists for the generated code.
+ */
+abstract private[uts46] class CodePointMapperBase {
+  protected def validAlways: BitSet
+
+  protected def validNV8: BitSet
+
+  protected def validXV8: BitSet
+
+  protected def ignored: BitSet
+
+  protected def mappedMultiCodePoints: IntMap[NonEmptyList[Int]]
+
+  protected def deviationMapped: IntMap[Int]
+
+  protected def deviationMultiMapped: IntMap[NonEmptyList[Int]]
+
+  protected def disallowed: BitSet
+
+  protected def disallowedSTD3Valid: BitSet
+
+  protected def disallowedSTD3Mapped: IntMap[Int]
+
+  protected def disallowedSTD3MultiMapped: IntMap[NonEmptyList[Int]]
+
+  protected def deviationIgnored: BitSet
+
+  protected def mapped: IntMap[Int]
+
+  /**
+   * The Unicode version the code point mapping functions target.
+   *
+   * @note
+   *   UTS-46 is backwards compatible with future versions of Unicode. The only part of the
+   *   mapping operation which can change between Unicode revisions is the disallowed character
+   *   set. This includes the STD3 Valid and STD3 mapped variants. In other words, code points
+   *   which were disallowed by some prior Unicode version may be made allowed in some future
+   *   Unicode version or they may still be disallowed but have their mappings under STD3
+   *   changed or they may be considered ''valid under STD3 only'', when they were formerlly
+   *   disllowed under STD3.
+   */
+  def unicodeVersion: String
 }
