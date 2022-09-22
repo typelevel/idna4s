@@ -23,6 +23,7 @@ package org.typelevel.idna4s.tests.uts46
 
 import cats.data._
 import munit._
+import org.scalacheck.Prop
 import org.scalacheck.Prop._
 import org.typelevel.idna4s.core._
 import org.typelevel.idna4s.core.uts46._
@@ -31,7 +32,7 @@ import org.typelevel.idna4s.scalacheck.all._
 final class CodePointMapperTests extends DisciplineSuite {
 
   property("Any valid unicode code point should have a code point status") {
-    forAll((cp: CodePoint) => assert(CodePointMapper.mapIntCodePoint(cp.value).isRight))
+    forAll((cp: CodePoint) => Prop(CodePointMapper.mapIntCodePoint(cp.value).isRight))
   }
 
   test("Known valid input strings should map correctly") {
