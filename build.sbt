@@ -104,10 +104,11 @@ lazy val scalacheck = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       List(
         "cats.",
         "cats.syntax.all.",
+        "org.scalacheck.",
         "org.typelevel.idna4s.core.",
-        "org.typelevel.idna4s.core.uts46.",
         "org.typelevel.idna4s.core.syntax.all.",
-        "org.typelevel.idna4s.scalacheck."
+        "org.typelevel.idna4s.core.uts46.",
+        "org.typelevel.idna4s.scalacheck.all."
       ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
     },
     consoleQuick / initialCommands := ""

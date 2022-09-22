@@ -403,39 +403,10 @@ object CodePointMapper extends GeneratedCodePointMapper {
 
     /**
      * The input string, mapped as much as was possible. Code points which failed replaced with
-     * the Unicode replacement character � (0xFFFD). This is mandated by UTS-46.
+     * the Unicode replacement character � (0xFFFD). Returning this value on failure is mandated
+     * by UTS-46.
      */
     def partiallyMappedInput: String
-
-    /**
-     * Reconstruct the original input `String` from [[#errors]] and [[#partiallyMappedInput]].
-     *
-     * @note
-     *   The output of this should ''not'' be directly rendered to the user or in error
-     *   messages. The reason that UTS-46 mandates that the replacement character � be inserted
-     *   into `String` values which fail to map is that their rendering can be misleading to the
-     *   user.
-     *
-     * @note
-     *   If this value contains the Unicode replacement character �, that means that � was
-     *   present in the original input `String`.
-     */
-    final lazy val unsafeOriginalInputString: String = {
-      def replaceError(sb: StringBuilder, error: CodePointMappingException): StringBuilder = {
-        val failureIndex: Int = error.failureIndex
-
-        sb.replace(
-          failureIndex,
-          failureIndex + 1,
-          new String(Character.toChars(error.codePoint.value)))
-      }
-
-      errors
-        .reduceLeftTo(
-          replaceError(new StringBuilder(partiallyMappedInput), _)
-        )(replaceError)
-        .toString
-    }
 
     final override def getMessage: String =
       toString
