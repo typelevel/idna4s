@@ -87,6 +87,15 @@ object CodePointMapper extends GeneratedCodePointMapper {
     mapCodePoints(true, false)(input)
 
   /**
+   * As `mapCodePoints`, but throws on failure.
+   */
+  def unsafeMapCodePoints(input: String): String =
+    mapCodePoints(input).fold(
+      e => throw e,
+      identity
+    )
+
+  /**
    * Map the code points in the given `String` according to the UTS-46 mapping tables as
    * described in section 5 of UTS-46. This is step 1 of processing an input `String` according
    * to UTS-46 for IDNA compatibility.
@@ -239,6 +248,13 @@ object CodePointMapper extends GeneratedCodePointMapper {
 
     loop(new StringBuilder(len), Nil, 0)
   }
+
+  /**
+   * As `mapCodePoints`, but throws on failure.
+   */
+  def unsafeMapCodePoints(useStd3ASCIIRules: Boolean, transitionalProcessing: Boolean)(
+      input: String): String =
+    mapCodePoints(useStd3ASCIIRules, tran)(input)
 
   /**
    * Determine the mapping of a code point according to the UTS-46 mapping tables as described
