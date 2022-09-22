@@ -21,7 +21,9 @@
 
 package org.typelevel.idna4s.core.uts46
 
+import cats._
 import cats.data._
+import cats.syntax.all._
 import org.typelevel.idna4s.core._
 
 /**
@@ -244,4 +246,67 @@ object CodePointStatus {
   sealed abstract class Unknown extends CodePointStatus
 
   object Unknown
+
+  implicit val hashAndOrderForCodePointStatus
+      : Hash[CodePointStatus] with Order[CodePointStatus] =
+    new Hash[CodePointStatus] with Order[CodePointStatus] {
+      override def hash(x: CodePointStatus): Int =
+        x.hashCode
+
+      override def compare(x: CodePointStatus, y: CodePointStatus): Int =
+        (x, y) match {
+          case (x: Valid, y: Valid) =>
+            x.idna2008Status.compare(y.idna2008Status)
+          case (_: Ignored, _: Ignored) =>
+            0
+          case (x: Mapped, y: Mapped) =>
+            x.mapping.compare(y.mapping)
+          case (x: Deviation, y: Deviation) =>
+            x.mapping.compare(y.mapping)
+          case (_: Disallowed, _: Disallowed) =>
+            0
+          case (_: Disallowed_STD3_Valid, _: Disallowed_STD3_Valid) =>
+            0
+          case (x: Disallowed_STD3_Mapped, y: Disallowed_STD3_Mapped) =>
+            x.mapping.compare(y.mapping)
+          case (_: Unknown, _: Unknown) =>
+            0
+          case (_: Valid, _) =>
+            -1
+          case (_, _: Valid) =>
+            1
+          case (_: Ignored, _) =>
+            -1
+          case (_, _: Ignored) =>
+            1
+          case (_: Mapped, _) =>
+            -1
+          case (_, _: Mapped) =>
+            1
+          case (_: Deviation, _) =>
+            -1
+          case (_, _: Deviation) =>
+            1
+          case (_: Disallowed, _) =>
+            -1
+          case (_, _: Disallowed) =>
+            1
+          case (_: Disallowed_STD3_Valid, _) =>
+            -1
+          case (_, _: Disallowed_STD3_Valid) =>
+            1
+          case (_: Disallowed_STD3_Mapped, _) =>
+            -1
+          case (_, _: Disallowed_STD3_Mapped) =>
+            1
+          // We don't need to handle Unknown. One of the above cases will have
+          // matched it.
+        }
+    }
+
+  implicit val showForCodePointStatus: Show[CodePointStatus] =
+    Show.fromToString
+
+  implicit def orderingForCodePointStatus: Ordering[CodePointStatus] =
+    hashAndOrderForCodePointStatus.toOrdering
 }
