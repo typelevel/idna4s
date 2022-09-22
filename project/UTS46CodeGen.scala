@@ -621,7 +621,6 @@ object UTS46CodeGen {
      * Create the AST for the generated file.
      */
     private def asSourceTree: Tree = {
-
       // The Type of a BitSet
       val bitSetType: Type =
         t"BitSet"
@@ -662,19 +661,27 @@ object UTS46CodeGen {
       // several valid encodings which create too deeply nested ASTs which
       // cause the ScalaMeta printer to crash.
       def asBitSetTerm(fa: SortedSet[CodePointRange]): Term = {
-        val terms: List[Term] = fa.foldMap(value =>
-          List(if (value.size === 1) {
-            q"mutableBitSet += ${Lit.Int(value.lower.value)}"
+        val (ranges, singles): (List[Term], List[Term]) = fa.foldMap(value =>
+          if (value.size < 10) {
+            // Unwrap relatively small ranges so we can create them all at
+            // once with a big BitSet literal. We don't do this for everything
+            // because we start running into method size limitations.
+            (
+              Nil,
+              Range.inclusive(value.lower.value, value.upper.value).foldLeft(List.empty[Term]) {
+                case (acc, value) => q"${Lit.Int(value)}" +: acc
+              })
           } else {
-            q"mutableBitSet ++= ${rangeInclusiveTree(value)}"
-          }))
+            (List(q"${rangeInclusiveTree(value)}"), Nil)
+          })
 
-        q"""
-         val mutableBitSet: scala.collection.mutable.BitSet = scala.collection.mutable.BitSet.empty
-
-         ..$terms
-         BitSet.empty ++ mutableBitSet
-         """
+        if (ranges.isEmpty && singles.isEmpty) {
+          q"BitSet.empty"
+        } else if (ranges.isEmpty) {
+          q"BitSet(..$singles).compact"
+        } else {
+          q"List(..$ranges).foldLeft(BitSet(..$singles)){case (acc, value) => value.foldLeft(acc)(_ + _)}.compact"
+        }
       }
 
       // Convert a mapping of code point ranges to terms, usually Int, or
@@ -706,13 +713,9 @@ object UTS46CodeGen {
          }"""
       }
 
-      // Create a val definition for one of the methods which returns a BitSet.
-      def bitSetMethod(name: String, rhs: Term): Defn.Val =
-        q"protected override final val ${Pat.Var(Term.Name(name))} = $rhs"
-
-      // Create a val definition for one of the methods which returns an IntMap.
-      def intMapMethod(name: String, rhs: Term): Defn.Val =
-        q"protected override final val ${Pat.Var(Term.Name(name))} = $rhs"
+      // Create a val definition for one of the methods
+      def emitMethod(name: String, rhs: Term): Defn.Val =
+        q"protected override final lazy val ${Pat.Var(Term.Name(name))} = $rhs"
 
       // For a set of code points which map to a single result code point,
       // create the expression that yields an IntMap[Int] of that mapping.
@@ -740,43 +743,41 @@ object UTS46CodeGen {
       // Create the expressions for the various methods we are overriding.
 
       def validAlwaysMethod: Defn.Val =
-        bitSetMethod("validAlways", asBitSetTerm(validAlways))
+        emitMethod("validAlways", asBitSetTerm(validAlways))
 
       def validNV8Method: Defn.Val =
-        bitSetMethod("validNV8", asBitSetTerm(validNV8))
+        emitMethod("validNV8", asBitSetTerm(validNV8))
 
       def validXV8Method: Defn.Val =
-        bitSetMethod("validXV8", asBitSetTerm(validXV8))
+        emitMethod("validXV8", asBitSetTerm(validXV8))
 
       def ignoredMethod: Defn.Val =
-        bitSetMethod("ignored", asBitSetTerm(ignored))
+        emitMethod("ignored", asBitSetTerm(ignored))
 
       def disallowedMethod: Defn.Val =
-        bitSetMethod("disallowed", asBitSetTerm(disallowed))
+        emitMethod("disallowed", asBitSetTerm(disallowed))
 
       def deviationIgnoredMethod: Defn.Val =
-        bitSetMethod("deviationIgnored", asBitSetTerm(deviationIgnored))
+        emitMethod("deviationIgnored", asBitSetTerm(deviationIgnored))
 
       def disallowedSTD3ValidMethod: Defn.Val =
-        bitSetMethod("disallowedSTD3Valid", asBitSetTerm(disallowedSTD3Valid))
+        emitMethod("disallowedSTD3Valid", asBitSetTerm(disallowedSTD3Valid))
 
       def mappedMultiMethod: Defn.Val =
         // q"protected override final val mappedMultiCodePoints: IntMap[NonEmptyList[Int]] = ???"
-        intMapMethod("mappedMultiCodePoints", multiMappingToTrees(mappedMulti))
+        emitMethod("mappedMultiCodePoints", multiMappingToTrees(mappedMulti))
 
       def deviationMappedMethod: Defn.Val =
-        intMapMethod("deviationMapped", singleMappingToTrees(deviationMapped))
+        emitMethod("deviationMapped", singleMappingToTrees(deviationMapped))
 
       def deviationMultiMappedMethod: Defn.Val =
-        intMapMethod("deviationMultiMapped", multiMappingToTrees(deviationMultiMapped))
+        emitMethod("deviationMultiMapped", multiMappingToTrees(deviationMultiMapped))
 
       def disallowedSTD3MappedMethod: Defn.Val =
-        intMapMethod("disallowedSTD3Mapped", singleMappingToTrees(disallowedSTD3Mapped))
+        emitMethod("disallowedSTD3Mapped", singleMappingToTrees(disallowedSTD3Mapped))
 
       def disallowedSTD3MultiMappedMethod: Defn.Val =
-        intMapMethod(
-          "disallowedSTD3MultiMapped",
-          multiMappingToTrees(disallowedSTD3MultiMapped))
+        emitMethod("disallowedSTD3MultiMapped", multiMappingToTrees(disallowedSTD3MultiMapped))
 
       // Note: Things are different for the `def mapped: IntMap[Int]`
       // method. This is by far the largest method we will be generating. It
@@ -811,8 +812,8 @@ object UTS46CodeGen {
       source"""package org.typelevel.idna4s.core.uts46
 
 import scala.collection.immutable.IntMap
-import scala.collection.immutable.BitSet
 import cats.data.NonEmptyList
+import cats.collections.BitSet
 
 private[uts46] abstract class GeneratedCodePointMapper0 extends CodePointMapperBase {
   override final val unicodeVersion = ${Lit.String(version.value)}

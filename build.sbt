@@ -54,7 +54,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := s"${projectName}-core",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-core" % catsV
+      "org.typelevel" %%% "cats-collections-core" % "0.9.4",
+      "org.typelevel" %%% "cats-core"             % catsV
     ),
     libraryDependencies ++= {
       // Needed for macros
