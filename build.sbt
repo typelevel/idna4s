@@ -6,6 +6,7 @@ val Scala212 = "2.12.17"
 val Scala213 = "2.13.8"
 val Scala3   = "3.1.3"
 
+val catsCollectionsV = "0.9.4"
 val catsV            = "2.8.0"
 val disciplineMunitV = "2.0.0-M3"
 val literallyV       = "1.1.0"
@@ -54,7 +55,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := s"${projectName}-core",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-collections-core" % "0.9.4",
+      "org.typelevel" %%% "cats-collections-core" % catsCollectionsV,
       "org.typelevel" %%% "cats-core"             % catsV
     ),
     libraryDependencies ++= {
