@@ -68,10 +68,19 @@ object CodePointStatus {
       override val idna2008Status: Option[IDNA2008Status] = Some(IDNA2008Status.XV8)
     }
 
+    /** The always valid status. */
     def always: Valid = Always
+
+    /** Valid, but excluded from IDNA 2008 for the current version of Unicode.
+      */
     def nv8: Valid = NV8
+
+    /** Valid, but excluded from IDNA 2008 for the all versions of Unicode.
+      */
     def xv8: Valid = XV8
 
+    /** Create a [[Valid]] instance, given some [[IDNA2008Status]] status.
+      */
     def apply(idna2008Status: Option[IDNA2008Status]): Valid =
       idna2008Status.fold(
         always
@@ -81,6 +90,8 @@ object CodePointStatus {
       }
   }
 
+  /** Status indicating the code point is ignored in the UTS-46 mapping.
+    */
   sealed abstract class Ignored extends CodePointStatus {
     final override def toString: String = "Ignored"
   }
@@ -91,7 +102,13 @@ object CodePointStatus {
     val instance: Ignored = IgnoredImpl
   }
 
+  /** Status indicating the code point is mapped to 1 or more code points in
+    * UTS-46.
+    */
   sealed abstract class Mapped extends CodePointStatus {
+
+    /** The code points to which the input code point is mapped.
+      */
     def mapping: NonEmptyList[CodePoint]
 
     final override def toString: String = s"Mapped(mapping = ${mapping})"
@@ -101,9 +118,13 @@ object CodePointStatus {
     final private[this] case class MappedImpl(override val mapping: NonEmptyList[CodePoint])
         extends Mapped
 
+    /** Create a mapping from a `NonEmptyList` of [[CodePoint]] values.
+      */
     def of(mapping: NonEmptyList[CodePoint]): Mapped =
       MappedImpl(mapping)
 
+    /** Create a mapping from a [[CodePoint]] values.
+      */
     def one(mapping: CodePoint): Mapped =
       of(NonEmptyList.one(mapping))
   }
@@ -166,4 +187,6 @@ object CodePointStatus {
   }
 
   sealed abstract class Unknown extends CodePointStatus
+
+  object Unknown
 }

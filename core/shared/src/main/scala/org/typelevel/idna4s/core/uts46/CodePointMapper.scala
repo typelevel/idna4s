@@ -254,7 +254,10 @@ object CodePointMapper extends GeneratedCodePointMapper {
    */
   def unsafeMapCodePoints(useStd3ASCIIRules: Boolean, transitionalProcessing: Boolean)(
       input: String): String =
-    mapCodePoints(useStd3ASCIIRules, tran)(input)
+    mapCodePoints(useStd3ASCIIRules, transitionalProcessing)(input).fold(
+      e => throw e,
+      identity
+    )
 
   /**
    * Determine the mapping of a code point according to the UTS-46 mapping tables as described
