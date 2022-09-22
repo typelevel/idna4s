@@ -263,9 +263,9 @@ object CodePointMapper extends GeneratedCodePointMapper {
    * Determine the mapping of a code point according to the UTS-46 mapping tables as described
    * in section 5 of UTS-46.
    *
-   * This is functionally the same as [[#mapCodePoints]] and one could even use this to write
-   * [[#mapCodePoints]], however [[#mapCodePoints]] is optimized for bulk mapping a full
-   * `String` and one should prefer that method for most use cases.
+   * This is functionally the same as `mapCodePoints` and one could even use this to write
+   * `mapCodePoints`, however `mapCodePoints` is optimized for bulk mapping a full `String` and
+   * one should prefer that method for most use cases.
    *
    * @see
    *   [[https://www.unicode.org/reports/tr46/#IDNA_Mapping_Table UTS-46 Section 5]]

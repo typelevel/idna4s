@@ -99,8 +99,8 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
       (value.failureIndex, value.message, value.codePoint))
 
   /**
-   * A generator which will generate an input String to [[CodePointMapper#mapCodePoints]] which
-   * will fail and the [[MappingException]] yield by said failure.
+   * A generator which will generate an input String to `CodePointMapper#mapCodePoints` which
+   * will fail and the `MappingException` yield by said failure.
    */
   final def genFailingStringAndMappingException: Gen[(String, MappingException)] =
     Arbitrary.arbitrary[(Boolean, Boolean)].flatMap {

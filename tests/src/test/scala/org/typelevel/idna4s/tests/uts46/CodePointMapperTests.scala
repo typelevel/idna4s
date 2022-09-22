@@ -30,20 +30,29 @@ import org.typelevel.idna4s.scalacheck.all._
 
 final class CodePointMapperTests extends DisciplineSuite {
 
-  property("Any valid unicode code point should have a code point status"){
-    forAll((cp: CodePoint) =>
-      assert(CodePointMapper.mapIntCodePoint(cp.value).isRight)
-    )
+  property("Any valid unicode code point should have a code point status") {
+    forAll((cp: CodePoint) => assert(CodePointMapper.mapIntCodePoint(cp.value).isRight))
   }
 
-  test("Known valid input strings should map correctly"){
+  test("Known valid input strings should map correctly") {
     assertEquals(CodePointMapper.mapCodePoints("valid"), Right("valid"))
   }
 
-  test("Known invalid input strings should fail"){
+  test("Known invalid input strings should fail") {
     import CodePointMapper._
     val input: String = "$invalid"
     val unicodeReplacementCharacter: String = "\ufffd"
-    assertEquals(CodePointMapper.mapCodePoints(input), Left(MappingException(NonEmptyList.of(CodePointMappingException(0, "Disallowed code point in input.", CodePoint.unsafeFromInt(input.codePointAt(0)))), s"${unicodeReplacementCharacter}invalid")))
+    assertEquals(
+      CodePointMapper.mapCodePoints(input),
+      Left(
+        MappingException(
+          NonEmptyList.of(
+            CodePointMappingException(
+              0,
+              "Disallowed code point in input.",
+              CodePoint.unsafeFromInt(input.codePointAt(0)))),
+          s"${unicodeReplacementCharacter}invalid"
+        ))
+    )
   }
 }
