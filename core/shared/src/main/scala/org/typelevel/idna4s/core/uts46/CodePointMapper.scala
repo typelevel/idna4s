@@ -21,14 +21,19 @@
 
 package org.typelevel.idna4s.core.uts46
 
-import scala.annotation.tailrec
-import cats.data._
-import org.typelevel.idna4s.core._
-import scala.util.control.NoStackTrace
-import java.lang.StringBuilder
-import scala.collection.immutable.IntMap
+import cats._
 import cats.collections.BitSet
+import cats.data._
+import cats.syntax.all._
+import java.lang.StringBuilder
+import org.typelevel.idna4s.core._
+import scala.annotation.tailrec
+import scala.collection.immutable.IntMap
+import scala.util.control.NoStackTrace
 
+/**
+ * This is a base type which exists for the generated code.
+ */
 abstract private[uts46] class CodePointMapperBase {
   protected def validAlways: BitSet
 
@@ -105,7 +110,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
     @tailrec
     def loop(
         acc: StringBuilder,
-        errors: List[MappingError],
+        errors: List[CodePointMappingException],
         index: Int): Either[MappingException, String] =
       if (index >= len) {
         NonEmptyList
@@ -141,7 +146,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
           // DISALLOWED
           loop(
             acc.appendCodePoint(ReplacementCharacter),
-            MappingError(
+            CodePointMappingException(
               index,
               "Disallowed code point in input.",
               CodePoint.unsafeFromInt(value)) :: errors,
@@ -175,7 +180,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
           if (useStd3ASCIIRules) {
             loop(
               acc.appendCodePoint(ReplacementCharacter),
-              MappingError(
+              CodePointMappingException(
                 index,
                 "Disallowed code point in input.",
                 CodePoint.unsafeFromInt(value)) :: errors,
@@ -189,7 +194,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
           if (useStd3ASCIIRules) {
             loop(
               acc.appendCodePoint(ReplacementCharacter),
-              MappingError(
+              CodePointMappingException(
                 index,
                 "Disallowed code point in input.",
                 CodePoint.unsafeFromInt(value)) :: errors,
@@ -206,7 +211,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
           if (useStd3ASCIIRules) {
             loop(
               acc.appendCodePoint(ReplacementCharacter),
-              MappingError(
+              CodePointMappingException(
                 index,
                 "Disallowed code point in input.",
                 CodePoint.unsafeFromInt(value)) :: errors,
@@ -235,6 +240,17 @@ object CodePointMapper extends GeneratedCodePointMapper {
     loop(new StringBuilder(len), Nil, 0)
   }
 
+  /**
+   * Determine the mapping of a code point according to the UTS-46 mapping tables as described
+   * in section 5 of UTS-46.
+   *
+   * This is functionally the same as [[#mapCodePoints]] and one could even use this to write
+   * [[#mapCodePoints]], however [[#mapCodePoints]] is optimized for bulk mapping a full
+   * `String` and one should prefer that method for most use cases.
+   *
+   * @see
+   *   [[https://www.unicode.org/reports/tr46/#IDNA_Mapping_Table UTS-46 Section 5]]
+   */
   def mapCodePoint(codePoint: CodePoint): CodePointStatus = {
     import CodePointStatus._
 
@@ -275,38 +291,132 @@ object CodePointMapper extends GeneratedCodePointMapper {
     }
   }
 
-  def unsafeMapIntCodePoint(codePoint: Int): Either[String, CodePointStatus] =
-    CodePoint.fromInt(codePoint).map(mapCodePoint)
+  /**
+   * As [[#mapIntCodePoint]], but throws an exception if the input is not a valid Unicode code
+   * point.
+   */
+  def unsafeMapIntCodePoint(codePoint: Int): CodePointStatus =
+    mapCodePoint(CodePoint.unsafeFromInt(codePoint))
 
-  final private val ReplacementCharacter =
-    0xfffd
+  /**
+   * As [[#mapCodePoint]], but takes an arbitrary `Int` value. This will fail the `Int` is not a
+   * valid Unicode code point.
+   */
+  def mapIntCodePoint(codePoint: Int): Either[String, CodePointStatus] =
+    Either.catchNonFatal(unsafeMapIntCodePoint(codePoint)).leftMap(_.getLocalizedMessage)
 
-  sealed abstract class MappingError extends Serializable {
+  /**
+   * An error that is yielded when mapping an individual code point fails.
+   */
+  sealed abstract class CodePointMappingException extends RuntimeException with NoStackTrace {
+
+    /**
+     * The index of the start of the Unicode code point in the input where the failure occurred.
+     */
     def failureIndex: Int
 
+    /**
+     * A description of why the failure occurred.
+     */
     def message: String
 
+    /**
+     * The [[CodePoint]] which caused the failure.
+     */
     def codePoint: CodePoint
 
+    // final
+
+    final override def getMessage: String =
+      toString
+
     final override def toString: String =
-      s"MappingError(message = $message, failureIndex = $failureIndex, codePoint = $codePoint)"
+      s"CodePointMappingException(message = $message, failureIndex = $failureIndex, codePoint = $codePoint)"
   }
 
-  object MappingError {
-    final private[this] case class MappingErrorImpl(
+  object CodePointMappingException {
+    final private[this] case class CodePointMappingExceptionImpl(
         override val failureIndex: Int,
         override val message: String,
         override val codePoint: CodePoint)
-        extends MappingError
+        extends CodePointMappingException
 
-    def apply(failureIndex: Int, message: String, codePoint: CodePoint): MappingError =
-      MappingErrorImpl(failureIndex, message, codePoint)
+    def apply(
+        failureIndex: Int,
+        message: String,
+        codePoint: CodePoint): CodePointMappingException =
+      CodePointMappingExceptionImpl(failureIndex, message, codePoint)
+
+    implicit val hashAndOrderForCodePointMappingException
+        : Hash[CodePointMappingException] with Order[CodePointMappingException] =
+      new Hash[CodePointMappingException] with Order[CodePointMappingException] {
+        override def hash(x: CodePointMappingException): Int = x.hashCode
+
+        override def compare(x: CodePointMappingException, y: CodePointMappingException): Int =
+          x.failureIndex.compare(y.failureIndex) match {
+            case 0 =>
+              x.message.compare(y.message) match {
+                case 0 =>
+                  x.codePoint.compare(y.codePoint)
+                case otherwise => otherwise
+              }
+            case otherwise => otherwise
+          }
+      }
+
+    implicit val showForCodePointMappingException: Show[CodePointMappingException] =
+      Show.fromToString
   }
 
+  /**
+   * An error which is yielded if attempting to map a sequence of Unicode code points with the
+   * UTS-46 mapping algorithm fails.
+   */
   sealed abstract class MappingException extends RuntimeException with NoStackTrace {
-    def errors: NonEmptyList[MappingError]
 
+    /**
+     * One or more mapping [[CodePointMappingException]].
+     *
+     * Each [[CodePointMappingException]] describes the mapping failure of an independent code
+     * point.
+     */
+    def errors: NonEmptyList[CodePointMappingException]
+
+    /**
+     * The input string, mapped as much as was possible. Code points which failed replaced with
+     * the Unicode replacement character � (0xFFFD). This is mandated by UTS-46.
+     */
     def partiallyMappedInput: String
+
+    /**
+     * Reconstruct the original input `String` from [[#errors]] and [[#partiallyMappedInput]].
+     *
+     * @note
+     *   The output of this should ''not'' be directly rendered to the user or in error
+     *   messages. The reason that UTS-46 mandates that the replacement character � be inserted
+     *   into `String` values which fail to map is that their rendering can be misleading to the
+     *   user.
+     *
+     * @note
+     *   If this value contains the Unicode replacement character �, that means that � was
+     *   present in the original input `String`.
+     */
+    final lazy val unsafeOriginalInputString: String = {
+      def replaceError(sb: StringBuilder, error: CodePointMappingException): StringBuilder = {
+        val failureIndex: Int = error.failureIndex
+
+        sb.replace(
+          failureIndex,
+          failureIndex + 1,
+          new String(Character.toChars(error.codePoint.value)))
+      }
+
+      errors
+        .reduceLeftTo(
+          replaceError(new StringBuilder(partiallyMappedInput), _)
+        )(replaceError)
+        .toString
+    }
 
     final override def getMessage: String =
       toString
@@ -317,13 +427,33 @@ object CodePointMapper extends GeneratedCodePointMapper {
 
   object MappingException {
     final private[this] case class MappingExceptionImpl(
-        override val errors: NonEmptyList[MappingError],
+        override val errors: NonEmptyList[CodePointMappingException],
         override val partiallyMappedInput: String)
         extends MappingException
 
     def apply(
-        errors: NonEmptyList[MappingError],
+        errors: NonEmptyList[CodePointMappingException],
         partiallyMappedInput: String): MappingException =
       MappingExceptionImpl(errors, partiallyMappedInput)
+
+    implicit val hashAndOrderForMappingException
+        : Hash[MappingException] with Order[MappingException] =
+      new Hash[MappingException] with Order[MappingException] {
+        override def hash(x: MappingException): Int =
+          x.hashCode
+
+        override def compare(x: MappingException, y: MappingException): Int =
+          x.errors.compare(y.errors) match {
+            case 0 =>
+              x.partiallyMappedInput.compare(y.partiallyMappedInput)
+            case otherwise => otherwise
+          }
+      }
   }
+
+  /**
+   * A constant for the Unicode replacement character �.
+   */
+  final private val ReplacementCharacter =
+    0xfffd
 }

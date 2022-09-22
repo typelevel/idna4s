@@ -24,9 +24,31 @@ package org.typelevel.idna4s.core.uts46
 import cats.data._
 import org.typelevel.idna4s.core._
 
+/**
+ * A description of the status of the Unicode code point as determined by the IDNA mapping in
+ * UTS-46.
+ *
+ * @see
+ *   [[[[https://www.unicode.org/reports/tr46/#IDNA_Mapping_Table UTS-46 Section 5]]
+ */
 sealed abstract class CodePointStatus extends Serializable
 
 object CodePointStatus {
+
+  /**
+   * Indicates the code point is Valid under UTS-46.
+   *
+   * Valid code points may be further separated as follows,
+   *
+   *   - Valid NV8, which are valid but excluded by IDNA 2008 for all domains for all versions
+   *     of Unicode.
+   *   - Valid XV8, which are valid but excluded by IDNA 2008 for the ''current'' version of
+   *     Unicode.
+   *   - Valid and not excluded by IDNA 2008 for any domain for any version of Unicode,
+   *     including future ones.
+   *
+   * This distinction is not normative and does not affect the UTS-46 mapping.
+   */
   sealed abstract class Valid extends CodePointStatus {
     def idna2008Status: Option[IDNA2008Status]
 
@@ -143,5 +165,5 @@ object CodePointStatus {
       of(NonEmptyList.one(mapping))
   }
 
-  // TODO: Do we want to add an Unknown constructor for bincompat
+  sealed abstract class Unknown extends CodePointStatus
 }
