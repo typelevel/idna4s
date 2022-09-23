@@ -10,6 +10,7 @@ def DefaultScalaVersion: String = Scala213
 val catsCollectionsV = "0.9.4"
 val catsV            = "2.8.0"
 val disciplineMunitV = "2.0.0-M3"
+val icu4jV           = "71.1"
 val literallyV       = "1.1.0"
 val munitV           = "1.0.0-M6"
 val scalacheckV      = "1.17.0"
@@ -138,7 +139,7 @@ lazy val scalacheck = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .dependsOn(core)
 
 lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .in(file("tests"))
   .settings(
     name := s"${projectName}-tests",
@@ -159,6 +160,11 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
     },
     consoleQuick / initialCommands := ""
+  )
+  .jvmSettings(
+    libraryDependencies ++= Seq(
+      "com.ibm.icu" % "icu4j" % icu4jV
+    ).map(_ % Test)
   )
   .dependsOn(core % Test, scalacheck % Test)
   .enablePlugins(NoPublishPlugin)

@@ -21,39 +21,6 @@
 
 package org.typelevel.idna4s.tests.uts46
 
-import cats.data._
 import munit._
-import org.scalacheck.Prop
-import org.scalacheck.Prop._
-import org.typelevel.idna4s.core._
-import org.typelevel.idna4s.core.uts46._
-import org.typelevel.idna4s.scalacheck.all._
 
-final class CodePointMapperTests extends DisciplineSuite {
-
-  property("Any valid unicode code point should have a code point status") {
-    forAll((cp: CodePoint) => Prop(CodePointMapper.mapIntCodePoint(cp.value).isRight))
-  }
-
-  test("Known valid input strings should map correctly") {
-    assertEquals(CodePointMapper.mapCodePoints("valid"), Right("valid"))
-  }
-
-  test("Known invalid input strings should fail") {
-    import CodePointMapper._
-    val input: String = "$invalid"
-    val unicodeReplacementCharacter: String = "\ufffd"
-    assertEquals(
-      CodePointMapper.mapCodePoints(input),
-      Left(
-        MappingException(
-          NonEmptyList.of(
-            CodePointMappingException(
-              0,
-              "Disallowed code point in input.",
-              CodePoint.unsafeFromInt(input.codePointAt(0)))),
-          s"${unicodeReplacementCharacter}invalid"
-        ))
-    )
-  }
-}
+trait CodePointMapperPlatformTests extends DisciplineSuite {}
