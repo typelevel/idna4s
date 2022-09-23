@@ -764,7 +764,6 @@ object UTS46CodeGen {
         emitMethod("disallowedSTD3Valid", asBitSetTerm(disallowedSTD3Valid))
 
       def mappedMultiMethod: Defn.Val =
-        // q"protected override final val mappedMultiCodePoints: IntMap[NonEmptyList[Int]] = ???"
         emitMethod("mappedMultiCodePoints", multiMappingToTrees(mappedMulti))
 
       def deviationMappedMethod: Defn.Val =
@@ -783,7 +782,7 @@ object UTS46CodeGen {
       // method. This is by far the largest method we will be generating. It
       // requires breaking up the input code points into four private methods
       // which are combined to yield the final result method.
-      def mappedMethods: List[Defn.Def] = {
+      def mappedMethods: List[Defn] = {
         val (mapped0, mapped1, mapped2, mapped3) = mapped.splitAt(mapped.size / 2) match {
           case (a, b) =>
             (a.splitAt(a.size / 2), b.splitAt(b.size / 2)) match {
@@ -797,7 +796,7 @@ object UTS46CodeGen {
           q"private final def mapped1 = ${singleMappingToTrees(mapped1)}",
           q"private final def mapped2 = ${singleMappingToTrees(mapped2)}",
           q"private final def mapped3 = ${singleMappingToTrees(mapped3)}",
-          q"protected override final def mapped = mapped0 ++ mapped1 ++ mapped2 ++ mapped3"
+          q"protected override final lazy val mapped = mapped0 ++ mapped1 ++ mapped2 ++ mapped3"
         )
       }
 

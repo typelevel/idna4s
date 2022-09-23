@@ -68,7 +68,8 @@ lazy val root = tlCrossRootProject
   .aggregate(
     core,
     scalacheck,
-    tests
+    tests,
+    benchmarks
   )
   .settings(name := projectName)
 
@@ -170,3 +171,26 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .dependsOn(core % Test, scalacheck % Test)
   .enablePlugins(NoPublishPlugin)
+
+lazy val benchmarks = project
+  .in(file("benchmarks"))
+  .settings(
+    libraryDependencies ++= List(
+      "com.ibm.icu" % "icu4j" % icu4jV from "https://github.com/unicode-org/icu/releases/download/release-72-rc/icu4j-72rc.jar"
+    ),
+    console / initialCommands := {
+      List(
+        "cats.",
+        "cats.syntax.all.",
+        "org.scalacheck.",
+        "org.typelevel.idna4s.core.",
+        "org.typelevel.idna4s.core.bootstring.",
+        "org.typelevel.idna4s.core.syntax.all.",
+        "org.typelevel.idna4s.core.uts46.",
+        "org.typelevel.idna4s.scalacheck.all."
+      ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
+    },
+    consoleQuick / initialCommands := ""
+  )
+  .dependsOn(core.jvm, scalacheck.jvm)
+  .enablePlugins(NoPublishPlugin, JmhPlugin)
