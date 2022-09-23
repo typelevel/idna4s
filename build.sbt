@@ -100,9 +100,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
         "org.typelevel.idna4s.core.",
         "org.typelevel.idna4s.core.uts46.",
         "org.typelevel.idna4s.core.bootstring.",
-        "org.typelevel.idna4s.core.syntax.all.")
-        .map(value => s"import ${value}${wildcardImport.value}")
-        .mkString("\n")
+        "org.typelevel.idna4s.core.syntax.all."
+      ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
     },
     consoleQuick / initialCommands := "",
     Compile / sourceGenerators ++= List(
