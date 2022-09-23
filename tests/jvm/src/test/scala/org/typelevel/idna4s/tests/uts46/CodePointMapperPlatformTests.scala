@@ -32,8 +32,8 @@ import org.typelevel.idna4s.core.uts46.CodePointMapper._
 trait CodePointMapperPlatformTests extends DisciplineSuite {
   import CodePointMapperPlatformTests._
 
-  // Note this test will become flaky idna4's and icu4j are targeting
-  // different versions of Unicode.
+  // Note this test is flaky when idna4s and icu4j are targeting different
+  // versions of Unicode.
   property("idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step") {
     forAll { (s: String) =>
       // Note: We set useStd3ASCIIRules to false here, even though that is not
