@@ -74,6 +74,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
         "cats.",
         "cats.syntax.all.",
         "org.typelevel.idna4s.core.",
+        "org.typelevel.idna4s.core.bootstring.",
         "org.typelevel.idna4s.core.syntax.all.")
         .map(value => s"import ${value}${wildcardImport.value}")
         .mkString("\n")
@@ -94,10 +95,10 @@ lazy val scalacheck = crossProject(JVMPlatform, JSPlatform, NativePlatform)
         "cats.",
         "cats.syntax.all.",
         "org.typelevel.idna4s.core.",
+        "org.typelevel.idna4s.core.bootstring.",
         "org.typelevel.idna4s.core.syntax.all.",
-        "org.typelevel.idna4s.scalacheck.")
-        .map(value => s"import ${value}${wildcardImport.value}")
-        .mkString("\n")
+        "org.typelevel.idna4s.scalacheck."
+      ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
     },
     consoleQuick / initialCommands := ""
   )
@@ -117,10 +118,10 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
         "cats.",
         "cats.syntax.all.",
         "org.typelevel.idna4s.core.",
+        "org.typelevel.idna4s.core.bootstring.",
         "org.typelevel.idna4s.core.syntax.all.",
-        "org.typelevel.idna4s.scalacheck.")
-        .map(value => s"import ${value}${wildcardImport.value}")
-        .mkString("\n")
+        "org.typelevel.idna4s.scalacheck."
+      ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
     },
     consoleQuick / initialCommands := ""
   )
