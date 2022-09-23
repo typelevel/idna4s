@@ -19,10 +19,27 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.typelevel.idna4s
+package org.typelevel.idna4s.core.syntax
 
-package object scalacheck {
-  object all extends ScalaCheckInstances with BootstringScalaCheckInstances
-  object core extends ScalaCheckInstances
-  object bootstring extends BootstringScalaCheckInstances
+import org.typelevel.idna4s.core.bootstring._
+import org.typelevel.literally.Literally
+
+private[syntax] trait DampSyntax {
+  implicit class DampContext(val sc: StringContext) {
+    def damp(args: Any*): Damp = macro DampSyntax.damp.make
+  }
+}
+
+private object DampSyntax {
+
+  private object damp extends Literally[Damp] {
+    def validate(c: Context)(s: String): Either[String, c.Expr[Damp]] = {
+      import c.universe._
+
+      Damp.fromString(s).map(_ => c.Expr(q"Damp.unsafeFromString($s)"))
+    }
+
+    def make(c: Context)(args: c.Expr[Any]*): c.Expr[Damp] =
+      apply(c)(args: _*)
+  }
 }

@@ -19,10 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.typelevel.idna4s
+package org.typelevel.idna4s.scalacheck
 
-package object scalacheck {
-  object all extends ScalaCheckInstances with BootstringScalaCheckInstances
-  object core extends ScalaCheckInstances
-  object bootstring extends BootstringScalaCheckInstances
+import org.scalacheck._
+import org.scalacheck.Gen.Choose
+import org.typelevel.idna4s.core.bootstring._
+
+private[scalacheck] trait BootstringScalaCheckInstances extends Serializable {
+  implicit final def chooseDamp: Choose[Damp] =
+    Choose.xmap[Int, Damp](Damp.unsafeFromInt, _.value)
+
+  implicit final def arbDamp: Arbitrary[Damp] =
+    Arbitrary(Gen.choose(Damp.MinValue, Damp.MaxValue))
+
+  implicit final def cogenDamp: Cogen[Damp] =
+    Cogen[Int].contramap(_.value)
 }
