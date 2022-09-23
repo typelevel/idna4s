@@ -35,12 +35,12 @@ ThisBuild / wildcardImport := {
 // scalaVersion is different than the default one. Otherwise, use the full
 // scalafix config, which includes Scala version specific rules.
 ThisBuild / scalafixConfig := {
-  if (scalaVersion.value != DefaultScalaVersion) {
+  if ((LocalRootProject / scalaVersion).value != DefaultScalaVersion) {
     Some(file(".scalafix-base.conf"))
   } else scalafixConfig.value
 }
 ThisBuild / scalafixScalaBinaryVersion := {
-  if (scalaVersion.value != DefaultScalaVersion) {
+  if ((LocalRootProject / scalaVersion).value != DefaultScalaVersion) {
     // This is the default according to Scalafix, but the key
     // `scalafixScalaBinaryVersion` isn't actually set in the Global scope, so
     // we can't use `scalafixScalaBinaryVersion.value` here. I believe they
