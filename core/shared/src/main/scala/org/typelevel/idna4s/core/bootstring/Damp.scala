@@ -86,6 +86,9 @@ object Damp {
   def fromString(value: String): Either[String, Damp] =
     Either.catchNonFatal(unsafeFromString(value.trim)).leftMap(_.getLocalizedMessage)
 
+  def unapply(value: Damp): Some[Int] =
+    Some(value.value)
+
   implicit val hashAndOrderForDamp: Hash[Damp] with Order[Damp] =
     new Hash[Damp] with Order[Damp] {
       override def hash(x: Damp): Int =
