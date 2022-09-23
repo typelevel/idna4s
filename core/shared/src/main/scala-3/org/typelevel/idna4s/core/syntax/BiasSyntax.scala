@@ -21,6 +21,7 @@
 
 package org.typelevel.idna4s.core.syntax
 
+import cats.syntax.all._
 import org.typelevel.idna4s.core.bootstring._
 import scala.language.future
 import scala.quoted.*
@@ -37,20 +38,20 @@ private object BiasSyntax {
   private def biasLiteralExpr(sc: Expr[StringContext], args: Expr[Seq[Any]])(
       using q: Quotes): Expr[Bias] =
     sc.value match {
-      case Some(sc) if sc.parts.size == 1 =>
+      case Some(sc) if sc.parts.size === 1 =>
         val value: String = sc.parts.head
         Bias
           .fromString(value)
           .fold(
             e => {
-              quotes.reflect.report.throwError(e)
+              quotes.reflect.report.errorAndAbort(e)
             },
             _ => '{ Bias.unsafeFromString(${ Expr(value) }) }
           )
       case Some(_) =>
-        quotes.reflect.report.throwError("StringContext must be a single string literal")
+        quotes.reflect.report.errorAndAbort("StringContext must be a single string literal")
       case None =>
-        quotes.reflect.report.throwError("StringContext args must be statically known")
+        quotes.reflect.report.errorAndAbort("StringContext args must be statically known")
     }
 
   inline def biasLiteral(inline sc: StringContext, inline args: Any*): Bias =

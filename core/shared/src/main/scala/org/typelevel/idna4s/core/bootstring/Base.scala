@@ -47,7 +47,7 @@ abstract class Base extends Serializable {
    * Attempt to convert a numerical value to the Unicode code point representing a digit with
    * that value in this base.
    */
-  def intToCodePointDigit(int: Int, uppercase: Boolean = false): Either[String, Int]
+  def intToCodePointDigit(int: Int, uppercase: Boolean): Either[String, Int]
 
   /**
    * Attempt to convert a Unicode code point representing a digit in this base to a numerical
@@ -56,14 +56,29 @@ abstract class Base extends Serializable {
   def codePointDigitToInt(codePoint: Int): Either[String, Int]
 
   /**
-   * As [[#intToCodePointDigit]], but throws on invalid input.
+   * As `intToCodePointDigit`, but throws on invalid input.
    */
-  def unsafeIntToCodePointDigit(int: Int, uppercase: Boolean = false): Int
+  def unsafeIntToCodePointDigit(int: Int, uppercase: Boolean): Int
 
   /**
    * As [[#codePointDigitToInt]], but throws on invalid input.
    */
   def unsafeCodePointDigitToInt(codePoint: Int): Int
+
+  // final //
+
+  /**
+   * Attempt to convert a numerical value to the lower case Unicode code point representing a
+   * digit with that value in this base.
+   */
+  final def intToCodePointDigit(int: Int): Either[String, Int] =
+    intToCodePointDigit(int, false)
+
+  /**
+   * As `intToCodePointDigit`, but throws on invalid input and yields only lower case results.
+   */
+  final def unsafeIntToCodePointDigit(int: Int): Int =
+    unsafeIntToCodePointDigit(int, false)
 
   final override def toString: String = s"Base(value = ${value})"
 }
@@ -102,7 +117,7 @@ object Base {
           s"Code point $codePoint is not valid for the given base.")
       }
 
-    override def unsafeIntToCodePointDigit(int: Int, uppercase: Boolean = false): Int =
+    override def unsafeIntToCodePointDigit(int: Int, uppercase: Boolean): Int =
       if (int < lowercaseArray.size && int >= 0) {
         if (uppercase) {
           uppercaseArray(int)
@@ -114,9 +129,7 @@ object Base {
           s"There is no digit in this base which corresponds to $int.")
       }
 
-    override def intToCodePointDigit(
-        int: Int,
-        uppercase: Boolean = false): Either[String, Int] =
+    override def intToCodePointDigit(int: Int, uppercase: Boolean): Either[String, Int] =
       Either
         .catchNonFatal(
           unsafeIntToCodePointDigit(int, uppercase)
