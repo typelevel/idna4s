@@ -34,16 +34,16 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
 
   // Note this test will become flaky idna4's and icu4j are targeting
   // different versions of Unicode.
-  property("idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step"){
-    forAll{(s: String) =>
-
+  property("idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step") {
+    forAll { (s: String) =>
       // Note: We set useStd3ASCIIRules to false here, even though that is not
       // recommended as the standard behavior by UTS-46. The reason for this
       // is that icu4j's implementation handles useStd3ASCIIRules outside of
       // the Normalizer2 and we can't directly access that code.
       //
       // https://github.com/unicode-org/icu/blob/main/icu4j/release-72-rc/classes/core/src/com/ibm/icu/impl/UTS46.java#L366
-      val idna4s: Either[MappingException, String] = CodePointMapper.mapCodePoints(false, false)(s)
+      val idna4s: Either[MappingException, String] =
+        CodePointMapper.mapCodePoints(false, false)(s)
       val icu4j: String = icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
 
       idna4s.fold(_.partiallyMappedInput, identity) ?= icu4j
