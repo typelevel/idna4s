@@ -295,12 +295,10 @@ object CodePointStatus {
             -1
           case (_, _: Disallowed_STD3_Valid) =>
             1
-          case (_: Disallowed_STD3_Mapped, _) =>
-            -1
-          case (_, _: Disallowed_STD3_Mapped) =>
-            1
-          // We don't need to handle Unknown. One of the above cases will have
-          // matched it.
+          // We don't need to handle Disallowed_STD3_Mapped and Unknown. One
+          // of the above cases will have matched Disallowed_STD3_Mapped and
+          // since there is currently now way to construct an Unknown, we
+          // don't need to match on it.
         }
     }
 
