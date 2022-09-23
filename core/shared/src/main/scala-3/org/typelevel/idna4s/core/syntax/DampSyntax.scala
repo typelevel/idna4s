@@ -21,6 +21,7 @@
 
 package org.typelevel.idna4s.core.syntax
 
+import cats.syntax.all.*
 import org.typelevel.idna4s.core.bootstring._
 import scala.language.future
 import scala.quoted.*
@@ -37,7 +38,7 @@ private object DampSyntax {
   private def dampLiteralExpr(sc: Expr[StringContext], args: Expr[Seq[Any]])(
       using q: Quotes): Expr[Damp] =
     sc.value match {
-      case Some(sc) if sc.parts.size == 1 =>
+      case Some(sc) if sc.parts.size === 1 =>
         val value: String = sc.parts.head
         Damp
           .fromString(value)

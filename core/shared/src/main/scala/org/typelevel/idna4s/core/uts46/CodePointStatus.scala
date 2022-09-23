@@ -105,7 +105,7 @@ object CodePointStatus {
   }
 
   object Ignored {
-    final private[this] case object IgnoredImpl extends Ignored
+    private[this] case object IgnoredImpl extends Ignored
 
     val instance: Ignored = IgnoredImpl
   }
