@@ -21,39 +21,25 @@
 
 package org.typelevel.idna4s.core.syntax
 
-import cats.syntax.all._
 import org.typelevel.idna4s.core.bootstring._
-import scala.language.future
-import scala.quoted.*
+import org.typelevel.literally.Literally
 
-private[syntax] trait BiasSyntax {
-  extension (inline ctx: StringContext) {
-    inline def bias(inline args: Any*): Bias =
-      BiasSyntax.biasLiteral(ctx, args)
+private[syntax] trait DampSyntax {
+  implicit class DampContext(val sc: StringContext) {
+    def damp(args: Any*): Damp = macro DampSyntax.damp.make
   }
 }
 
-private object BiasSyntax {
+private object DampSyntax {
 
-  private def biasLiteralExpr(sc: Expr[StringContext], args: Expr[Seq[Any]])(
-      using q: Quotes): Expr[Bias] =
-    sc.value match {
-      case Some(sc) if sc.parts.size === 1 =>
-        val value: String = sc.parts.head
-        Bias
-          .fromString(value)
-          .fold(
-            e => {
-              quotes.reflect.report.errorAndAbort(e)
-            },
-            _ => '{ Bias.unsafeFromString(${ Expr(value) }) }
-          )
-      case Some(_) =>
-        quotes.reflect.report.errorAndAbort("StringContext must be a single string literal")
-      case None =>
-        quotes.reflect.report.errorAndAbort("StringContext args must be statically known")
+  private object damp extends Literally[Damp] {
+    def validate(c: Context)(s: String): Either[String, c.Expr[Damp]] = {
+      import c.universe._
+
+      Damp.fromString(s).map(_ => c.Expr(q"Damp.unsafeFromString($s)"))
     }
 
-  inline def biasLiteral(inline sc: StringContext, inline args: Any*): Bias =
-    ${ biasLiteralExpr('sc, 'args) }
+    def make(c: Context)(args: c.Expr[Any]*): c.Expr[Damp] =
+      apply(c)(args: _*)
+  }
 }

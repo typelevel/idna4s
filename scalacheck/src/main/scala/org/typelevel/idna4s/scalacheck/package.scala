@@ -22,5 +22,7 @@
 package org.typelevel.idna4s
 
 package object scalacheck {
-  object all extends ScalaCheckInstances
+  object all extends ScalaCheckInstances with BootstringScalaCheckInstances
+  object core extends ScalaCheckInstances
+  object bootstring extends BootstringScalaCheckInstances
 }

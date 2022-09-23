@@ -19,41 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.typelevel.idna4s.core.syntax
+package org.typelevel.idna4s.scalacheck
 
-import cats.syntax.all._
+import org.scalacheck._
+import org.scalacheck.Gen.Choose
 import org.typelevel.idna4s.core.bootstring._
-import scala.language.future
-import scala.quoted.*
 
-private[syntax] trait BiasSyntax {
-  extension (inline ctx: StringContext) {
-    inline def bias(inline args: Any*): Bias =
-      BiasSyntax.biasLiteral(ctx, args)
-  }
-}
+private[scalacheck] trait BootstringScalaCheckInstances extends Serializable {
+  implicit final def chooseDamp: Choose[Damp] =
+    Choose.xmap[Int, Damp](Damp.unsafeFromInt, _.value)
 
-private object BiasSyntax {
+  implicit final def arbDamp: Arbitrary[Damp] =
+    Arbitrary(Gen.choose(Damp.MinValue, Damp.MaxValue))
 
-  private def biasLiteralExpr(sc: Expr[StringContext], args: Expr[Seq[Any]])(
-      using q: Quotes): Expr[Bias] =
-    sc.value match {
-      case Some(sc) if sc.parts.size === 1 =>
-        val value: String = sc.parts.head
-        Bias
-          .fromString(value)
-          .fold(
-            e => {
-              quotes.reflect.report.errorAndAbort(e)
-            },
-            _ => '{ Bias.unsafeFromString(${ Expr(value) }) }
-          )
-      case Some(_) =>
-        quotes.reflect.report.errorAndAbort("StringContext must be a single string literal")
-      case None =>
-        quotes.reflect.report.errorAndAbort("StringContext args must be statically known")
-    }
-
-  inline def biasLiteral(inline sc: StringContext, inline args: Any*): Bias =
-    ${ biasLiteralExpr('sc, 'args) }
+  implicit final def cogenDamp: Cogen[Damp] =
+    Cogen[Int].contramap(_.value)
 }

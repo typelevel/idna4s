@@ -21,11 +21,8 @@
 
 package org.typelevel.idna4s.core
 
-import scala.annotation.nowarn
-
 private[core] trait CodePointPlatform {
 
-  @nowarn("msg=never used")
   private[core] def nameForCodePoint(codePoint: CodePoint): Option[String] =
     None
 }

@@ -21,44 +21,102 @@
 
 package org.typelevel.idna4s.core.bootstring
 
-import cats._
+import cats.Show
+import cats.kernel._
 import cats.syntax.all._
 
-sealed abstract class Damp extends Product with Serializable {
-  def value: Int
-
+/**
+ * Newtype for RFC 3492 Damp value.
+ *
+ * A damp is a special value used in the bias adaptation function of Bootstring when scaling the
+ * very first delta. It compensates for the fact that the second delta is usually much smaller
+ * the first.
+ *
+ * @see
+ *   [[https://datatracker.ietf.org/doc/html/rfc3492#section-3.4 Bias Adaptation]]
+ */
+final class Damp private (val value: Int) extends AnyVal {
   final override def toString: String = s"Damp(value = ${value})"
 }
 
 object Damp {
-  final private[this] case class DampImpl(override val value: Int) extends Damp
+  private def apply(value: Int): Damp =
+    new Damp(value)
 
-  val PunycodeDamp: Damp = unsafeFromInt(700)
+  val MinValue: Damp = Damp(2)
+  val MaxValue: Damp = Damp(Int.MaxValue)
 
-  def fromInt(value: Int): Either[String, Damp] =
+  /**
+   * The damp used by the Punycode Bootstring invocation.
+   */
+  final val PunycodeDamp: Damp = new Damp(700)
+
+  /**
+   * Attempt to create a [[Damp]] value from an int value, throwing an exception if it is
+   * outside the valid domain for a [[Damp]] value.
+   */
+  def unsafeFromInt(value: Int): Damp =
     if (value >= 2) {
-      Right(DampImpl(value))
+      Damp(value)
     } else {
-      Left(s"According to RFC-3492 damp values must be >= 2.")
+      throw new IllegalArgumentException(
+        s"According to RFC-3492 damp values must be >= 2: ${value}")
     }
 
-  def unsafeFromInt(value: Int): Damp =
-    fromInt(value).fold(
-      e => throw new IllegalArgumentException(e),
-      identity
-    )
-
-  def fromString(value: String): Either[String, Damp] =
-    ApplicativeError[Either[Throwable, *], Throwable]
-      .catchNonFatal(
-        value.toInt
-      )
-      .leftMap(_.getLocalizedMessage)
-      .flatMap(fromInt)
-
+  /**
+   * Attempt to create a [[Damp]] value from a `String` value, representing a base 10 int32
+   * value, throwing an exception if the `String` is not a valid base 10 int32 value or if it is
+   * outside the valid domain for a [[Damp]] value.
+   */
   def unsafeFromString(value: String): Damp =
-    fromString(value).fold(
-      e => throw new IllegalArgumentException(e),
-      identity
-    )
+    unsafeFromInt(value.toInt)
+
+  /**
+   * Attempt to create a [[Damp]] value from an int value, yielding an error if it is outside
+   * the valid domain for a [[Damp]] value.
+   */
+  def fromInt(value: Int): Either[String, Damp] =
+    Either.catchNonFatal(unsafeFromInt(value)).leftMap(_.getLocalizedMessage)
+
+  /**
+   * Attempt to create a [[Damp]] value from a `String` value, representing a base 10 int32
+   * value, yielding an error if the `String` is not a valid base 10 int32 value or if it is
+   * outside the valid domain for a [[Damp]] value.
+   */
+  def fromString(value: String): Either[String, Damp] =
+    Either.catchNonFatal(unsafeFromString(value.trim)).leftMap(_.getLocalizedMessage)
+
+  def unapply(value: Damp): Some[Int] =
+    Some(value.value)
+
+  implicit val hashAndOrderForDamp: Hash[Damp] with Order[Damp] =
+    new Hash[Damp] with Order[Damp] {
+      override def hash(x: Damp): Int =
+        x.hashCode
+
+      override def compare(x: Damp, y: Damp): Int =
+        x.value.compare(y.value)
+    }
+
+  implicit def orderingForDamp: Ordering[Damp] =
+    hashAndOrderForDamp.toOrdering
+
+  implicit val showForDamp: Show[Damp] =
+    Show.fromToString
+
+  implicit val lowerBoundedForDamp: LowerBounded[Damp] =
+    new LowerBounded[Damp] {
+      override def partialOrder: PartialOrder[Damp] =
+        hashAndOrderForDamp
+
+      override def minBound: Damp = MinValue
+    }
+
+  implicit val upperBoundedForDamp: UpperBounded[Damp] =
+    new UpperBounded[Damp] {
+      override def partialOrder: PartialOrder[Damp] =
+        hashAndOrderForDamp
+
+      override def maxBound: Damp = MaxValue
+    }
 }
