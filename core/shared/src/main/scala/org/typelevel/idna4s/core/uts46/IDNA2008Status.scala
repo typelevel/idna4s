@@ -44,7 +44,7 @@ object IDNA2008Status {
   implicit val orderAndHashForIDNA2008Status: Order[IDNA2008Status] with Hash[IDNA2008Status] =
     new Order[IDNA2008Status] with Hash[IDNA2008Status] {
       override def hash(x: IDNA2008Status): Int =
-        1
+        x.hashCode
 
       override def compare(x: IDNA2008Status, y: IDNA2008Status): Int =
         (x, y) match {

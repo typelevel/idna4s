@@ -2,6 +2,8 @@ import org.typelevel.idna4s.build._
 
 ThisBuild / tlBaseVersion := "0.1"
 
+val UnicodeVersion: String = "14.0.0"
+
 val Scala212                    = "2.12.17"
 val Scala213                    = "2.13.9"
 val Scala3                      = "3.1.3"
@@ -108,7 +110,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     Compile / sourceGenerators ++= List(
       (Compile / sourceManaged)
         .map(
-          UTS46CodeGen.generate
+          UTS46CodeGen.generate(_, Some(UnicodeVersion))
         )
         .taskValue
     )

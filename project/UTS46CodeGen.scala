@@ -32,9 +32,9 @@ object UTS46CodeGen {
    * @param dir
    *   The base directory that the generated file will be in.
    */
-  def generate(dir: File): Seq[File] =
+  def generate(dir: File, unicodeVersion: Option[String]): Seq[File] =
     Rows
-      .fromUnicodeURL
+      .fromUnicodeURL(unicodeVersion.map(UnicodeVersion.apply))
       .fold(
         e => throw e,
         rows => List(generateFromRows(rows, dir))

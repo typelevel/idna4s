@@ -297,8 +297,8 @@ object CodePointStatus {
             1
           // We don't need to handle Disallowed_STD3_Mapped and Unknown. One
           // of the above cases will have matched Disallowed_STD3_Mapped and
-          // since there is currently now way to construct an Unknown, we
-          // don't need to match on it.
+          // since there is currently no way to construct an Unknown, we don't
+          // need to match on it.
         }
     }
 
