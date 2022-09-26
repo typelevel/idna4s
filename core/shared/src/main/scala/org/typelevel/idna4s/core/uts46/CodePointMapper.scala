@@ -507,8 +507,8 @@ abstract private[uts46] class CodePointMapperBase {
    *   set. This includes the STD3 Valid and STD3 mapped variants. In other words, code points
    *   which were disallowed by some prior Unicode version may be made allowed in some future
    *   Unicode version or they may still be disallowed but have their mappings under STD3
-   *   changed or they may be considered ''valid under STD3 only'', when they were formerlly
-   *   disllowed under STD3.
+   *   changed or they may be considered ''valid under STD3 only'', when they were formerly
+   *   disallowed under STD3.
    */
   def unicodeVersion: String
 }
