@@ -21,6 +21,7 @@
 
 package org.typelevel.idna4s.core.syntax
 
+import cats.syntax.all.*
 import org.typelevel.idna4s.core.bootstring._
 import scala.language.future
 import scala.quoted.*
@@ -37,20 +38,20 @@ private object DampSyntax {
   private def dampLiteralExpr(sc: Expr[StringContext], args: Expr[Seq[Any]])(
       using q: Quotes): Expr[Damp] =
     sc.value match {
-      case Some(sc) if sc.parts.size == 1 =>
+      case Some(sc) if sc.parts.size === 1 =>
         val value: String = sc.parts.head
         Damp
           .fromString(value)
           .fold(
             e => {
-              quotes.reflect.report.throwError(e)
+              quotes.reflect.report.errorAndAbort(e)
             },
             _ => '{ Damp.unsafeFromString(${ Expr(value) }) }
           )
       case Some(_) =>
-        quotes.reflect.report.throwError("StringContext must be a single string literal")
+        quotes.reflect.report.errorAndAbort("StringContext must be a single string literal")
       case None =>
-        quotes.reflect.report.throwError("StringContext args must be statically known")
+        quotes.reflect.report.errorAndAbort("StringContext args must be statically known")
     }
 
   inline def dampLiteral(inline sc: StringContext, inline args: Any*): Damp =
