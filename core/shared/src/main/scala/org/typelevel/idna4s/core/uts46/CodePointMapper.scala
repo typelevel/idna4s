@@ -103,7 +103,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
         acc: StringBuilder,
         errors: List[CodePointMappingException],
         index: Int): Either[MappingException, String] =
-      if (index >= len || index < 0 /* Overflow check */) {
+      if (index >= len || index < 0 /* Overflow check */ ) {
         NonEmptyList
           .fromList(errors)
           .fold(
@@ -217,10 +217,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
                 nextIndex
               )
             } else {
-              loop(
-                acc.appendCodePoint(disallowedSTD3Mapped(value)),
-                errors,
-                nextIndex)
+              loop(acc.appendCodePoint(disallowedSTD3Mapped(value)), errors, nextIndex)
             }
           } else if (disallowedSTD3MultiMapped.contains(value)) {
             // DISALLOWED_STD3_MAPPED_MULTI
