@@ -111,14 +111,14 @@ object CodePointMapper extends GeneratedCodePointMapper {
           )(errors => Left(MappingException(errors, acc.toString)))
       } else {
         val value: Int = input.codePointAt(index)
-        val indexIncrement: Int = if (value >= 0x10000) 2 else 1
+        val nextIndex: Int = index + (if (value >= 0x10000) 2 else 1)
 
         // ASCII fast path
 
         if (value <= 0x7f) {
           asciiCodePointMap(value) match {
             case ASCII_VALID =>
-              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+              loop(acc.appendCodePoint(value), errors, nextIndex)
             case ASCII_DISALLOWED_STD3_VALID =>
               // DISALLOWED_STD3_VALID
               if (useStd3ASCIIRules) {
@@ -128,13 +128,13 @@ object CodePointMapper extends GeneratedCodePointMapper {
                     index,
                     "Disallowed code point in input.",
                     CodePoint.unsafeFromInt(value)) :: errors,
-                  index + indexIncrement
+                  nextIndex
                 )
               } else {
-                loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+                loop(acc.appendCodePoint(value), errors, nextIndex)
               }
             case otherwise =>
-              loop(acc.appendCodePoint(otherwise), errors, index + indexIncrement)
+              loop(acc.appendCodePoint(otherwise), errors, nextIndex)
           }
         } else {
 
@@ -145,10 +145,10 @@ object CodePointMapper extends GeneratedCodePointMapper {
 
           if (validAlways(value) || validNV8(value) || validXV8(value)) {
             // VALID
-            loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+            loop(acc.appendCodePoint(value), errors, nextIndex)
           } else if (mapped.contains(value)) {
             // MAPPED
-            loop(acc.appendCodePoint(mapped(value)), errors, index + indexIncrement)
+            loop(acc.appendCodePoint(mapped(value)), errors, nextIndex)
           } else if (mappedMultiCodePoints.contains(value)) {
             // MAPPED MULTI
             loop(
@@ -157,7 +157,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
                   acc.appendCodePoint(value)
               },
               errors,
-              index + indexIncrement)
+              nextIndex)
           } else if (disallowed(value)) {
             // DISALLOWED
             loop(
@@ -166,17 +166,17 @@ object CodePointMapper extends GeneratedCodePointMapper {
                 index,
                 "Disallowed code point in input.",
                 CodePoint.unsafeFromInt(value)) :: errors,
-              index + indexIncrement
+              nextIndex
             )
           } else if (ignored(value)) {
             // IGNORED
-            loop(acc, errors, index + indexIncrement)
+            loop(acc, errors, nextIndex)
           } else if (deviationMapped.contains(value)) {
             // DEVIATION
             if (transitionalProcessing) {
-              loop(acc.appendCodePoint(deviationMapped(value)), errors, index + indexIncrement)
+              loop(acc.appendCodePoint(deviationMapped(value)), errors, nextIndex)
             } else {
-              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+              loop(acc.appendCodePoint(value), errors, nextIndex)
             }
           } else if (deviationMultiMapped.contains(value)) {
             // DEVIATION_MULTI
@@ -187,9 +187,9 @@ object CodePointMapper extends GeneratedCodePointMapper {
                     acc.appendCodePoint(value)
                 },
                 errors,
-                index + indexIncrement)
+                nextIndex)
             } else {
-              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+              loop(acc.appendCodePoint(value), errors, nextIndex)
             }
           } else if (disallowedSTD3Valid(value)) {
             // DISALLOWED_STD3_VALID
@@ -200,10 +200,10 @@ object CodePointMapper extends GeneratedCodePointMapper {
                   index,
                   "Disallowed code point in input.",
                   CodePoint.unsafeFromInt(value)) :: errors,
-                index + indexIncrement
+                nextIndex
               )
             } else {
-              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+              loop(acc.appendCodePoint(value), errors, nextIndex)
             }
           } else if (disallowedSTD3Mapped.contains(value)) {
             // DISALLOWED_STD3_MAPPED
@@ -214,13 +214,13 @@ object CodePointMapper extends GeneratedCodePointMapper {
                   index,
                   "Disallowed code point in input.",
                   CodePoint.unsafeFromInt(value)) :: errors,
-                index + indexIncrement
+                nextIndex
               )
             } else {
               loop(
                 acc.appendCodePoint(disallowedSTD3Mapped(value)),
                 errors,
-                index + indexIncrement)
+                nextIndex)
             }
           } else if (disallowedSTD3MultiMapped.contains(value)) {
             // DISALLOWED_STD3_MAPPED_MULTI
@@ -231,7 +231,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
                   index,
                   "Disallowed code point in input.",
                   CodePoint.unsafeFromInt(value)) :: errors,
-                index + indexIncrement
+                nextIndex
               )
             } else {
               loop(
@@ -240,11 +240,11 @@ object CodePointMapper extends GeneratedCodePointMapper {
                     acc.appendCodePoint(value)
                 },
                 errors,
-                index + indexIncrement)
+                nextIndex)
             }
           } else if (deviationIgnored(value)) {
             // DEVIATION_IGNORED
-            loop(acc, errors, index + indexIncrement)
+            loop(acc, errors, nextIndex)
           } else {
             // Should be impossible
             throw new AssertionError(
