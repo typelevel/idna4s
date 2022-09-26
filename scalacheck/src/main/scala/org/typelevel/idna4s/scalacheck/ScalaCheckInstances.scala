@@ -125,6 +125,17 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
     Cogen[(List[CodePointMappingException], String)].contramap(value =>
       (value.errors.toList, value.partiallyMappedInput))
 
+  implicit final def arbIDNA2008Status: Arbitrary[IDNA2008Status] =
+    Arbitrary(Gen.oneOf(IDNA2008Status.NV8, IDNA2008Status.XV8))
+
+  implicit final def cogenIDna2008Status: Cogen[IDNA2008Status] =
+    Cogen[Int].contramap {
+      case IDNA2008Status.NV8 =>
+        0
+      case IDNA2008Status.XV8 =>
+        1
+    }
+
   /**
    * Generator for int values which are not Unicode code points.
    */

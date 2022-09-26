@@ -33,6 +33,33 @@ import scala.util.control.NoStackTrace
 
 object CodePointMapper extends GeneratedCodePointMapper {
 
+  // Sentinel values for working with the asciiCodePointMap array
+  final private val ASCII_DISALLOWED_STD3_VALID = -1
+  final private val ASCII_VALID = -2
+
+  /**
+   * Array for the fast path of mapping ASCII code points (0x0, 0x7F) under UTS-46.
+   *
+   * Results are sentinel values or mapped code points.
+   *
+   * -1 = DISALLOWED_STD3_VALID
+   * -2 = VALID
+   *
+   * Anything else is a mapped code point.
+   */
+  private val asciiCodePointMap: Array[Int] =
+    (Range.inclusive(0x0, 0x2c).map(_ => ASCII_DISALLOWED_STD3_VALID) ++
+      Range.inclusive(0x2d, 0x2e).map(_ => ASCII_VALID) ++
+      Range.inclusive(0x2f, 0x2f).map(_ => ASCII_DISALLOWED_STD3_VALID) ++
+      Range.inclusive(0x30, 0x39).map(_ => ASCII_VALID) ++
+      Range.inclusive(0x3a, 0x40).map(_ => ASCII_DISALLOWED_STD3_VALID) ++
+      Range
+        .inclusive(0x41, 0x5a)
+        .map(_.toChar.toLower.toInt) ++ /* Upper to lower case mapping */
+      Range.inclusive(0x5b, 0x60).map(_ => ASCII_DISALLOWED_STD3_VALID) ++
+      Range.inclusive(0x61, 0x7a).map(_ => ASCII_VALID) ++
+      Range.inclusive(0x7b, 0x7f).map(_ => ASCII_DISALLOWED_STD3_VALID)).toArray
+
   /**
    * Map the code points in the given `String` according to the UTS-46 mapping tables as
    * described in section 5 of UTS-46. useStd3ASCIIRules is true and transitionalProcessing is
@@ -86,118 +113,144 @@ object CodePointMapper extends GeneratedCodePointMapper {
         val value: Int = input.codePointAt(index)
         val indexIncrement: Int = if (value >= 0x10000) 2 else 1
 
-        // We check valid then mapped first. This is for two reasons. First,
-        // we want to prioritize fast execution on the successful code
-        // path. Second, other than disallowed, valid/mapped make up the vast
-        // majority of the domain.
+        // ASCII fast path
 
-        if (validAlways(value) || validNV8(value) || validXV8(value)) {
-          // VALID
-          loop(acc.appendCodePoint(value), errors, index + indexIncrement)
-        } else if (mapped.contains(value)) {
-          // MAPPED
-          loop(acc.appendCodePoint(mapped(value)), errors, index + indexIncrement)
-        } else if (mappedMultiCodePoints.contains(value)) {
-          // MAPPED MULTI
-          loop(
-            mappedMultiCodePoints(value).foldLeft(acc) {
-              case (acc, value) =>
-                acc.appendCodePoint(value)
-            },
-            errors,
-            index + indexIncrement)
-        } else if (disallowed(value)) {
-          // DISALLOWED
-          loop(
-            acc.appendCodePoint(ReplacementCharacter),
-            CodePointMappingException(
-              index,
-              "Disallowed code point in input.",
-              CodePoint.unsafeFromInt(value)) :: errors,
-            index + indexIncrement
-          )
-        } else if (ignored(value)) {
-          // IGNORED
-          loop(acc, errors, index + indexIncrement)
-        } else if (deviationMapped.contains(value)) {
-          // DEVIATION
-          if (transitionalProcessing) {
-            loop(acc.appendCodePoint(deviationMapped(value)), errors, index + indexIncrement)
-          } else {
-            loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+        if (value <= 0x7f) {
+          asciiCodePointMap(value) match {
+            case ASCII_VALID =>
+              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+            case ASCII_DISALLOWED_STD3_VALID =>
+              // DISALLOWED_STD3_VALID
+              if (useStd3ASCIIRules) {
+                loop(
+                  acc.appendCodePoint(ReplacementCharacter),
+                  CodePointMappingException(
+                    index,
+                    "Disallowed code point in input.",
+                    CodePoint.unsafeFromInt(value)) :: errors,
+                  index + indexIncrement
+                )
+              } else {
+                loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+              }
+            case otherwise =>
+              loop(acc.appendCodePoint(otherwise), errors, index + indexIncrement)
           }
-        } else if (deviationMultiMapped.contains(value)) {
-          // DEVIATION_MULTI
-          if (transitionalProcessing) {
-            loop(
-              deviationMultiMapped(value).foldLeft(acc) {
-                case (acc, value) =>
-                  acc.appendCodePoint(value)
-              },
-              errors,
-              index + indexIncrement)
-          } else {
-            loop(acc.appendCodePoint(value), errors, index + indexIncrement)
-          }
-        } else if (disallowedSTD3Valid(value)) {
-          // DISALLOWED_STD3_VALID
-          if (useStd3ASCIIRules) {
-            loop(
-              acc.appendCodePoint(ReplacementCharacter),
-              CodePointMappingException(
-                index,
-                "Disallowed code point in input.",
-                CodePoint.unsafeFromInt(value)) :: errors,
-              index + indexIncrement
-            )
-          } else {
-            loop(acc.appendCodePoint(value), errors, index + indexIncrement)
-          }
-        } else if (disallowedSTD3Mapped.contains(value)) {
-          // DISALLOWED_STD3_MAPPED
-          if (useStd3ASCIIRules) {
-            loop(
-              acc.appendCodePoint(ReplacementCharacter),
-              CodePointMappingException(
-                index,
-                "Disallowed code point in input.",
-                CodePoint.unsafeFromInt(value)) :: errors,
-              index + indexIncrement
-            )
-          } else {
-            loop(
-              acc.appendCodePoint(disallowedSTD3Mapped(value)),
-              errors,
-              index + indexIncrement)
-          }
-        } else if (disallowedSTD3MultiMapped.contains(value)) {
-          // DISALLOWED_STD3_MAPPED_MULTI
-          if (useStd3ASCIIRules) {
-            loop(
-              acc.appendCodePoint(ReplacementCharacter),
-              CodePointMappingException(
-                index,
-                "Disallowed code point in input.",
-                CodePoint.unsafeFromInt(value)) :: errors,
-              index + indexIncrement
-            )
-          } else {
-            loop(
-              disallowedSTD3MultiMapped(value).foldLeft(acc) {
-                case (acc, value) =>
-                  acc.appendCodePoint(value)
-              },
-              errors,
-              index + indexIncrement)
-          }
-        } else if (deviationIgnored(value)) {
-          // DEVIATION_IGNORED
-          loop(acc, errors, index + indexIncrement)
         } else {
-          // Should be impossible
-          throw new AssertionError(
-            s"Code point does not map to any set (this is probably a bug in idna4s): $value"
-          )
+
+          // We check valid then mapped first. This is for two reasons. First,
+          // we want to prioritize fast execution on the successful code
+          // path. Second, other than disallowed, valid/mapped make up the vast
+          // majority of the domain.
+
+          if (validAlways(value) || validNV8(value) || validXV8(value)) {
+            // VALID
+            loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+          } else if (mapped.contains(value)) {
+            // MAPPED
+            loop(acc.appendCodePoint(mapped(value)), errors, index + indexIncrement)
+          } else if (mappedMultiCodePoints.contains(value)) {
+            // MAPPED MULTI
+            loop(
+              mappedMultiCodePoints(value).foldLeft(acc) {
+                case (acc, value) =>
+                  acc.appendCodePoint(value)
+              },
+              errors,
+              index + indexIncrement)
+          } else if (disallowed(value)) {
+            // DISALLOWED
+            loop(
+              acc.appendCodePoint(ReplacementCharacter),
+              CodePointMappingException(
+                index,
+                "Disallowed code point in input.",
+                CodePoint.unsafeFromInt(value)) :: errors,
+              index + indexIncrement
+            )
+          } else if (ignored(value)) {
+            // IGNORED
+            loop(acc, errors, index + indexIncrement)
+          } else if (deviationMapped.contains(value)) {
+            // DEVIATION
+            if (transitionalProcessing) {
+              loop(acc.appendCodePoint(deviationMapped(value)), errors, index + indexIncrement)
+            } else {
+              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+            }
+          } else if (deviationMultiMapped.contains(value)) {
+            // DEVIATION_MULTI
+            if (transitionalProcessing) {
+              loop(
+                deviationMultiMapped(value).foldLeft(acc) {
+                  case (acc, value) =>
+                    acc.appendCodePoint(value)
+                },
+                errors,
+                index + indexIncrement)
+            } else {
+              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+            }
+          } else if (disallowedSTD3Valid(value)) {
+            // DISALLOWED_STD3_VALID
+            if (useStd3ASCIIRules) {
+              loop(
+                acc.appendCodePoint(ReplacementCharacter),
+                CodePointMappingException(
+                  index,
+                  "Disallowed code point in input.",
+                  CodePoint.unsafeFromInt(value)) :: errors,
+                index + indexIncrement
+              )
+            } else {
+              loop(acc.appendCodePoint(value), errors, index + indexIncrement)
+            }
+          } else if (disallowedSTD3Mapped.contains(value)) {
+            // DISALLOWED_STD3_MAPPED
+            if (useStd3ASCIIRules) {
+              loop(
+                acc.appendCodePoint(ReplacementCharacter),
+                CodePointMappingException(
+                  index,
+                  "Disallowed code point in input.",
+                  CodePoint.unsafeFromInt(value)) :: errors,
+                index + indexIncrement
+              )
+            } else {
+              loop(
+                acc.appendCodePoint(disallowedSTD3Mapped(value)),
+                errors,
+                index + indexIncrement)
+            }
+          } else if (disallowedSTD3MultiMapped.contains(value)) {
+            // DISALLOWED_STD3_MAPPED_MULTI
+            if (useStd3ASCIIRules) {
+              loop(
+                acc.appendCodePoint(ReplacementCharacter),
+                CodePointMappingException(
+                  index,
+                  "Disallowed code point in input.",
+                  CodePoint.unsafeFromInt(value)) :: errors,
+                index + indexIncrement
+              )
+            } else {
+              loop(
+                disallowedSTD3MultiMapped(value).foldLeft(acc) {
+                  case (acc, value) =>
+                    acc.appendCodePoint(value)
+                },
+                errors,
+                index + indexIncrement)
+            }
+          } else if (deviationIgnored(value)) {
+            // DEVIATION_IGNORED
+            loop(acc, errors, index + indexIncrement)
+          } else {
+            // Should be impossible
+            throw new AssertionError(
+              s"Code point does not map to any set (this is probably a bug in idna4s): $value"
+            )
+          }
         }
       }
 
@@ -230,38 +283,50 @@ object CodePointMapper extends GeneratedCodePointMapper {
 
     val value: Int = codePoint.value
 
-    if (validAlways(value)) {
-      Valid.always
-    } else if (validNV8(value)) {
-      Valid.nv8
-    } else if (validXV8(value)) {
-      Valid.xv8
-    } else if (mapped.contains(value)) {
-      Mapped.one(CodePoint.unsafeFromInt(mapped(value)))
-    } else if (mappedMultiCodePoints.contains(value)) {
-      Mapped.of(mappedMultiCodePoints(value).map(CodePoint.unsafeFromInt))
-    } else if (ignored(value)) {
-      Ignored.instance
-    } else if (deviationMapped.contains(value)) {
-      Deviation.one(CodePoint.unsafeFromInt(deviationMapped(value)))
-    } else if (deviationMultiMapped.contains(value)) {
-      Deviation.of(deviationMultiMapped(codePoint.value).map(CodePoint.unsafeFromInt))
-    } else if (disallowed(value)) {
-      Disallowed.instance
-    } else if (disallowedSTD3Valid(value)) {
-      Disallowed_STD3_Valid.instance
-    } else if (disallowedSTD3Mapped.contains(value)) {
-      Disallowed_STD3_Mapped.one(CodePoint.unsafeFromInt(disallowedSTD3Mapped(value)))
-    } else if (disallowedSTD3MultiMapped.contains(value)) {
-      Disallowed_STD3_Mapped.of(disallowedSTD3MultiMapped(value).map(CodePoint.unsafeFromInt))
-    } else if (deviationIgnored(value)) {
-      Deviation.ignored
+    if (value <= 0x7f) {
+      asciiCodePointMap(value) match {
+        case ASCII_VALID =>
+          Valid.always
+        case ASCII_DISALLOWED_STD3_VALID =>
+          Disallowed_STD3_Valid.instance
+        case otherwise =>
+          Mapped.one(CodePoint.unsafeFromInt(otherwise))
+      }
     } else {
-      // Impossible
 
-      throw new AssertionError(
-        s"Code point does not map to any set (this is probably a bug in idna4s): $value"
-      )
+      if (validAlways(value)) {
+        Valid.always
+      } else if (validNV8(value)) {
+        Valid.nv8
+      } else if (validXV8(value)) {
+        Valid.xv8
+      } else if (mapped.contains(value)) {
+        Mapped.one(CodePoint.unsafeFromInt(mapped(value)))
+      } else if (mappedMultiCodePoints.contains(value)) {
+        Mapped.of(mappedMultiCodePoints(value).map(CodePoint.unsafeFromInt))
+      } else if (ignored(value)) {
+        Ignored.instance
+      } else if (deviationMapped.contains(value)) {
+        Deviation.one(CodePoint.unsafeFromInt(deviationMapped(value)))
+      } else if (deviationMultiMapped.contains(value)) {
+        Deviation.of(deviationMultiMapped(codePoint.value).map(CodePoint.unsafeFromInt))
+      } else if (disallowed(value)) {
+        Disallowed.instance
+      } else if (disallowedSTD3Valid(value)) {
+        Disallowed_STD3_Valid.instance
+      } else if (disallowedSTD3Mapped.contains(value)) {
+        Disallowed_STD3_Mapped.one(CodePoint.unsafeFromInt(disallowedSTD3Mapped(value)))
+      } else if (disallowedSTD3MultiMapped.contains(value)) {
+        Disallowed_STD3_Mapped.of(disallowedSTD3MultiMapped(value).map(CodePoint.unsafeFromInt))
+      } else if (deviationIgnored(value)) {
+        Deviation.ignored
+      } else {
+        // Impossible
+
+        throw new AssertionError(
+          s"Code point does not map to any set (this is probably a bug in idna4s): $value"
+        )
+      }
     }
   }
 

@@ -23,10 +23,10 @@ package org.typelevel.idna4s.tests.uts46
 
 import cats.kernel.laws.discipline._
 import munit._
-import org.typelevel.idna4s.core.uts46.CodePointMapper._
+import org.typelevel.idna4s.core.uts46._
 import org.typelevel.idna4s.scalacheck.all._
 
-final class MappingExceptionTests extends DisciplineSuite {
-  checkAll("Order[MappingException]", OrderTests[MappingException].order)
-  checkAll("Hash[MappingException]", HashTests[MappingException].hash)
+final class CodePointStatusTests extends DisciplineSuite {
+  checkAll("Order[CodePointStatus]", OrderTests[CodePointStatus].order)
+  checkAll("Hash[CodePointStatus]", HashTests[CodePointStatus].hash)
 }

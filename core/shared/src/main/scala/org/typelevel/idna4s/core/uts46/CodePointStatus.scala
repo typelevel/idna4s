@@ -237,16 +237,6 @@ object CodePointStatus {
       of(NonEmptyList.one(mapping))
   }
 
-  /**
-   * Special ADT constructor for binary compatibility.
-   *
-   * This type is present to allow greater latitude in case a binary breaking change is required
-   * in this ADT. It is not expected that it will ever be used.
-   */
-  sealed abstract class Unknown extends CodePointStatus
-
-  object Unknown
-
   implicit val hashAndOrderForCodePointStatus
       : Hash[CodePointStatus] with Order[CodePointStatus] =
     new Hash[CodePointStatus] with Order[CodePointStatus] {
@@ -269,8 +259,6 @@ object CodePointStatus {
             0
           case (x: Disallowed_STD3_Mapped, y: Disallowed_STD3_Mapped) =>
             x.mapping.compare(y.mapping)
-          case (_: Unknown, _: Unknown) =>
-            0
           case (_: Valid, _) =>
             -1
           case (_, _: Valid) =>
@@ -295,10 +283,8 @@ object CodePointStatus {
             -1
           case (_, _: Disallowed_STD3_Valid) =>
             1
-          // We don't need to handle Disallowed_STD3_Mapped and Unknown. One
-          // of the above cases will have matched Disallowed_STD3_Mapped and
-          // since there is currently now way to construct an Unknown, we
-          // don't need to match on it.
+          // We don't need to handle Disallowed_STD3_Mapped One of the above
+          // cases will have matched Disallowed_STD3_Mapped.
         }
     }
 

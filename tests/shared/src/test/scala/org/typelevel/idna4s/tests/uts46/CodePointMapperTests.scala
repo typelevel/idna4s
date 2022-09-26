@@ -32,6 +32,7 @@ import org.typelevel.idna4s.scalacheck.all._
 final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPlatformTests {
 
   property("Any valid unicode code point should have a code point status") {
+    // This is really just a check that we don't hit the AssertionError case.
     forAll((cp: CodePoint) => Prop(CodePointMapper.mapIntCodePoint(cp.value).isRight))
   }
 
@@ -55,5 +56,10 @@ final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPla
           s"${unicodeReplacementCharacter}invalid"
         ))
     )
+  }
+
+  test("All ASCII code points should map without error") {
+    // This is really just a check that we don't hit the AssertionError case.
+    Range.inclusive(0x0, 0x7a).foreach(value => CodePointMapper.mapIntCodePoint(value).isRight)
   }
 }

@@ -23,6 +23,7 @@ package org.typelevel.idna4s.tests.uts46
 
 import cats.syntax.all._
 import munit._
+import org.scalacheck._
 import org.scalacheck.Prop._
 import org.typelevel.idna4s.core.uts46._
 import com.ibm.icu.text.Normalizer2
@@ -50,6 +51,18 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     }
   }
 
+  property(
+    "idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step for ASCII strings") {
+    // We have a special case fast path for ASCII code points. This tests that code path.
+    forAll(Gen.asciiStr) { ascii =>
+      val idna4s: Either[MappingException, String] =
+        CodePointMapper.mapCodePoints(false, false)(ascii)
+      val icu4j: String =
+        icu4jUTS46Normalizer2.normalize(ascii, new StringBuilder(ascii.size)).toString
+
+      idna4s.fold(_.partiallyMappedInput, identity) ?= icu4j
+    }
+  }
 }
 
 object CodePointMapperPlatformTests {
