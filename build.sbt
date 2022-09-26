@@ -2,6 +2,8 @@ import org.typelevel.idna4s.build._
 
 ThisBuild / tlBaseVersion := "0.1"
 
+val UnicodeVersion: String = "15.0.0"
+
 val Scala212                    = "2.12.17"
 val Scala213                    = "2.13.9"
 val Scala3                      = "3.1.3"
@@ -10,7 +12,7 @@ def DefaultScalaVersion: String = Scala213
 val catsCollectionsV = "0.9.4"
 val catsV            = "2.8.0"
 val disciplineMunitV = "2.0.0-M3"
-val icu4jV           = "71.1"
+val icu4jV           = "72rc"
 val literallyV       = "1.1.0"
 val munitV           = "1.0.0-M6"
 val scalacheckV      = "1.17.0"
@@ -108,7 +110,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     Compile / sourceGenerators ++= List(
       (Compile / sourceManaged)
         .map(
-          UTS46CodeGen.generate
+          UTS46CodeGen.generate(_, Some(UnicodeVersion))
         )
         .taskValue
     )
@@ -163,7 +165,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "com.ibm.icu" % "icu4j" % icu4jV
+      "com.ibm.icu" % "icu4j" % icu4jV from "https://github.com/unicode-org/icu/releases/download/release-72-rc/icu4j-72rc.jar"
     ).map(_ % Test)
   )
   .dependsOn(core % Test, scalacheck % Test)
