@@ -103,7 +103,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
         acc: StringBuilder,
         errors: List[CodePointMappingException],
         index: Int): Either[MappingException, String] =
-      if (index >= len) {
+      if (index >= len || index < 0 /* Overflow check */) {
         NonEmptyList
           .fromList(errors)
           .fold(
