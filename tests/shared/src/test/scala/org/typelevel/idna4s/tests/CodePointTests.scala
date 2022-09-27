@@ -71,18 +71,14 @@ final class CodePointTests extends DisciplineSuite {
     loop(0)
   }
 
-  test("CodePoint.fromChar should succeed for non-surrogate chars") {
+  test("CodePoint.fromChar should succeed for all chars") {
 
     @tailrec
     def loop(i: Int): Unit =
-      if (i >= Character.MIN_SURROGATE) {
+      if (i > Char.MaxValue.toInt) {
         ()
       } else {
-        CodePoint.fromChar(i.toChar) match {
-          case Left(e) => fail(e)
-          case Right(cp) =>
-            assertEquals(cp.value, i)
-        }
+        assertEquals(CodePoint.fromChar(i.toChar).value, i)
 
         loop(i + 1)
       }
@@ -114,11 +110,6 @@ final class CodePointTests extends DisciplineSuite {
 
   property("CodePoint.fromInt should fail for non code points")(
     forAll(genNonCodePoint)(i => Prop(CodePoint.fromInt(i).isLeft) :| "CodePoint.fromInt fails")
-  )
-
-  property("CodePoint.fromChar should fail for surrogate char values")(
-    forAll(Gen.choose(Character.MIN_SURROGATE, Char.MaxValue))(c =>
-      Prop(CodePoint.fromChar(c).isLeft) :| "CodePoint.fromChar fails")
   )
 
   test("Literal syntax for valid code points should compile") {
