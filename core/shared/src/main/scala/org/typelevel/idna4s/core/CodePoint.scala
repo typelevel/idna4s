@@ -70,14 +70,117 @@ final class CodePoint private (val value: Int) extends AnyVal {
   def toChars: List[Char] =
     Character.toChars(value).toList
 
+  /**
+   * True if the code point represents a high surrogate code point.
+   *
+   * A high surrogate code point is a code point that when followed by a valid low surrogate
+   * code point in a UTF-16 char sequence, represents a different code point.
+   *
+   * For example,
+   *
+   * {{{
+   * scala> val high = codePoint"0xd800"
+   * val high: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 55296, hexValue = 0xD800, name = HIGH SURROGATES D800, utf16CharCount = 1)
+   *
+   * scala> val low = codePoint"0xdc00"
+   * val low: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 56320, hexValue = 0xDC00, name = LOW SURROGATES DC00, utf16CharCount = 1)
+   *
+   * scala> val combined = CodePoint.unsafeFromInt(Character.toCodePoint(high.toChars.head, low.toChars.head))
+   * val combined: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 65536, hexValue = 0x10000, name = LINEAR B SYLLABLE B008 A, utf16CharCount = 2)
+   *
+   * scala> high == CodePoint.fromChar(combined.toChars.head)
+   * val res0: Boolean = true
+   *
+   * scala> low == CodePoint.fromChar(combined.toChars.tail.head)
+   * val res1: Boolean = true
+   * }}}
+   *
+   * Care must be taken when working with these code points. Usually, when thinking in terms of
+   * Unicode characters, one does not want to directly operation on partial surrogate values. If
+   * you pull one of these values directly out of a `String` and you intend to be operating on
+   * code points or Unicode characters, that likely means you have either indexed the `String`
+   * incorrectly, e.g. by char values not by code points or that the `String` not valid Unicode
+   * malformed. The `String` type does not validated that the component char values make up a
+   * valid Unicode character sequence, only that they are all valid code points.
+   *
+   * {{{
+   * // This does not have, and will never have,
+   * // a valid Unicode representation, because it is two high (leading)
+   * // chars in a row.
+   * scala> val invalid = new String(Array(0xd800.toChar, 0xd800.toChar))
+   * val invalid: String = ??
+   * }}}
+   *
+   * @note
+   *   These code points are also sometimes referred to as "leading" surrogate code points.
+   */
+  def isHighSurrogate: Boolean =
+    value >= 0xd800 && value <= 0xdbff
+
+  /**
+   * True if the code point represents a low surrogate code point.
+   *
+   * A low surrogate code point is a code point that when following a valid high surrogate code
+   * point in a UTF-16 char sequence, represents a different code point.
+   *
+   * For example,
+   *
+   * {{{
+   * scala> val high = codePoint"0xd800"
+   * val high: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 55296, hexValue = 0xD800, name = HIGH SURROGATES D800, utf16CharCount = 1)
+   *
+   * scala> val low = codePoint"0xdc00"
+   * val low: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 56320, hexValue = 0xDC00, name = LOW SURROGATES DC00, utf16CharCount = 1)
+   *
+   * scala> val combined = CodePoint.unsafeFromInt(Character.toCodePoint(high.toChars.head, low.toChars.head))
+   * val combined: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 65536, hexValue = 0x10000, name = LINEAR B SYLLABLE B008 A, utf16CharCount = 2)
+   *
+   * scala> high == CodePoint.fromChar(combined.toChars.head)
+   * val res0: Boolean = true
+   *
+   * scala> low == CodePoint.fromChar(combined.toChars.tail.head)
+   * val res1: Boolean = true
+   * }}}
+   *
+   * Care must be taken when working with these code points. Usually, when thinking in terms of
+   * Unicode characters, one does not want to directly operation on partial surrogate values. If
+   * you pull one of these values directly out of a `String` and you intend to be operating on
+   * code points or Unicode characters, that likely means you have either indexed the `String`
+   * incorrectly, e.g. by char values not by code points or that the `String` not valid Unicode
+   * malformed. The `String` type does not validated that the component char values make up a
+   * valid Unicode character sequence, only that they are all valid code points.
+   *
+   * {{{
+   * // This does not have, and will never have,
+   * // a valid Unicode representation, because it is two high (leading)
+   * // chars in a row.
+   * scala> val invalid = new String(Array(0xd800.toChar, 0xd800.toChar))
+   * val invalid: String = ??
+   * }}}
+   *
+   * @note
+   *   These code points are also sometimes referred to as "leading" surrogate code points.
+   */
+  def isLowSurrogate: Boolean =
+    value >= 0xdc00 && value <= 0xdfff
+
+  /**
+   * True if the code point is either a high or low surrogate code point.
+   *
+   * See [[#isLowSurrogate]] and [[#isHighSurrogate]] for more information.
+   */
+  def isSurrogate: Boolean =
+    isHighSurrogate || isLowSurrogate
+
   override def toString: String =
     CodePoint
       .nameForCodePoint(this)
       .fold(
-        s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(value)}, utf16CharCount = ${utf16CharCount})"
+        s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(
+            value)}, utf16CharCount = ${utf16CharCount}, isLowSurrogate = ${isLowSurrogate}, isHighSurrogate = ${isHighSurrogate})"
       )(name =>
         s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(
-            value)}, name = ${name}, utf16CharCount = ${utf16CharCount})")
+            value)}, name = ${name}, utf16CharCount = ${utf16CharCount}, isLowSurrogate = ${isLowSurrogate}, isHighSurrogate = ${isHighSurrogate})")
 }
 
 // CodePointPlatform provides a nameForCodePoint method. This uses the

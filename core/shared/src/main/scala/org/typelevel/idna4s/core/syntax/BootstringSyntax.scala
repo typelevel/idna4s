@@ -21,4 +21,4 @@
 
 package org.typelevel.idna4s.core.syntax
 
-trait BootstringSyntax extends BiasSyntax with DampSyntax
+trait BootstringSyntax extends BiasSyntax with DampSyntax with DelimiterSyntax

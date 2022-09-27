@@ -151,7 +151,7 @@ object Bootstring {
 
       // Insert the delimiter if there is at least one basic code point
       if (basicCodePointCount =!= 0) {
-        basicCodePoints.put(params.delimiter.codePoint)
+        basicCodePoints.put(params.delimiter.value)
       }
 
       nonBasicCodePoints.foldLeft(
@@ -353,7 +353,7 @@ object Bootstring {
           : (List[Int], List[Int], Int, Boolean) =
         foldLeftCodePoints(value.reverse)((List.empty[Int], List.empty[Int], 0, false)) {
           case ((Nil, nonBasic, basicCodePointLength, false), cp) =>
-            if (cp === params.delimiter.codePoint) {
+            if (cp === params.delimiter.value) {
               (Nil, nonBasic, basicCodePointLength, true)
             } else {
               (Nil, cp +: nonBasic, basicCodePointLength, false)

@@ -65,7 +65,7 @@ package object bootstring {
       if (i >= value.remaining) {
         out
       } else {
-        if (value.get(i) === delimiter.codePoint) {
+        if (value.get(i) === delimiter.value) {
           loop(i + 1, Some(i))
         } else {
           loop(i + 1, out)
