@@ -39,17 +39,17 @@ import cats.syntax.all._
  *
  * The `toString` for this class does ''not'' render the `String` representation of this code
  * point, it renders the base 10 and base 16 value of the code point, as well as the number of
- * UTF-16 bytes (char values) needed to represent this code point and if possible a prose
- * description of the code point. The reason for not rendering the `String` representation is
- * that this type is often used in error cases where the code point will have no valid `String`
- * representation, or where that representation is not meaningful, or where that representation
- * could mangle the error message (as noted above).
+ * UTF-16 char values needed to represent this code point and if possible a prose description of
+ * the code point. The reason for not rendering the `String` representation is that this type is
+ * often used in error cases where the code point will have no valid `String` representation, or
+ * where that representation is not meaningful, or where that representation could mangle the
+ * error message (as noted above).
  *
  * For example,
  *
  * {{{
  * scala> CodePoint.fromChar('a')
- * val res0: Either[String, org.typelevel.idna4s.core.CodePoint] = Right(CodePoint(value = 97, hexValue = 0x0061, name = LATIN SMALL LETTER A, charCount = 1))
+ * val res0: Either[String, org.typelevel.idna4s.core.CodePoint] = Right(CodePoint(value = 97, hexValue = 0x0061, name = LATIN SMALL LETTER A, utf16CharCount = 1))
  * }}}
  *
  * @see
@@ -58,15 +58,14 @@ import cats.syntax.all._
 final class CodePoint private (val value: Int) extends AnyVal {
 
   /**
-   * The number of UTF-16 bytes needed to represent this code point. UTF-16 encodes code points
-   * >= 0x10000 as surrogate pairs, requiring two bytes to represent.
+   * A given char value in UTF-16 code point may be represented by 1-2 char values.
    */
-  def charCount: Int =
+  def utf16CharCount: Int =
     if (value >= 0x10000) 2 else 1
 
   /**
-   * Convert this code point to a list of UTF-16 bytes (char values), either size 1 or 2
-   * depending on if this code point is represents a surrogate pair in UTF-16.
+   * Convert this code point to a list of UTF-16 char values, either size 1 or 2 depending on if
+   * this code point is represents a surrogate pair in UTF-16.
    */
   def toChars: List[Char] =
     Character.toChars(value).toList
@@ -75,10 +74,10 @@ final class CodePoint private (val value: Int) extends AnyVal {
     CodePoint
       .nameForCodePoint(this)
       .fold(
-        s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(value)}, charCount = ${charCount})"
+        s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(value)}, utf16CharCount = ${utf16CharCount})"
       )(name =>
         s"CodePoint(value = ${value}, hexValue = ${CodePoint.intToHex(
-            value)}, name = ${name}, charCount = ${charCount})")
+            value)}, name = ${name}, utf16CharCount = ${utf16CharCount})")
 }
 
 // CodePointPlatform provides a nameForCodePoint method. This uses the
@@ -120,28 +119,14 @@ object CodePoint extends CodePointPlatform {
     Either.catchNonFatal(unsafeFromInt(value)).leftMap(_.getLocalizedMessage)
 
   /**
-   * Attempt to create a [[CodePoint]] from a char value, throwing an exception if the char is
-   * not a valid Unicode code point.
+   * Create a Unicode code point from a char value.
    *
-   * Only char values which are not part of UTF-16 surrogate pairs are valid.
+   * @note
+   *   This method will create a code point from any char value, including partial surrogate
+   *   values.
    */
-  def unsafeFromChar(value: Char): CodePoint =
-    if (value >= Character.MIN_SURROGATE) {
-      throw new IllegalArgumentException(
-        s"Char values which are part of a UTF-16 surrogate pair do not represent complete Unicode code points: ${intToHex(
-            value.toInt)}")
-    } else {
-      CodePoint(value.toInt)
-    }
-
-  /**
-   * Attempt to create a [[CodePoint]] from a char value, yielding an error if the char is not a
-   * valid Unicode code point.
-   *
-   * Only char values which are not part of UTF-16 surrogate pairs are valid.
-   */
-  def fromChar(value: Char): Either[String, CodePoint] =
-    Either.catchNonFatal(unsafeFromChar(value)).leftMap(_.getLocalizedMessage)
+  def fromChar(value: Char): CodePoint =
+    unsafeFromInt(value.toInt)
 
   /**
    * Attempt to parse a `String` as a Unicode code point, throwing an exception if the `String`
