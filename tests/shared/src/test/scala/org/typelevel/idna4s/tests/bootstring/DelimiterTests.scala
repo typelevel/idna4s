@@ -69,13 +69,11 @@ final class DelimiterTests extends DisciplineSuite {
         val d: Delimiter = Delimiter.unsafeFromInt(i)
         assertEquals(d.value, i)
 
-        d.codePoint.toChars match {
-          case x :: Nil =>
+        d.codePoint.asChars match {
+          case Left(x) =>
             assertEquals(Delimiter.unsafeFromChar(x).codePoint, d.codePoint)
-          case x :: y :: Nil =>
+          case Right((x, y)) =>
             assertEquals(Delimiter.unsafeFromInt(Character.toCodePoint(x, y)), d)
-          case _ =>
-            fail(s"Delimiter ${i} did not yield 1 or 2 chars.")
         }
 
         loop(i + 1)
