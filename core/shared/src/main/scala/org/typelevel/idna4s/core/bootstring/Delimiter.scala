@@ -78,6 +78,9 @@ object Delimiter {
   private def apply(value: Int): Delimiter =
     new Delimiter(value)
 
+  def unapply(value: Delimiter): Some[Int] =
+    Some(value.value)
+
   /**
    * The [[Delimiter]] used by the Punycode variant of Bootstring, '-'.
    */
