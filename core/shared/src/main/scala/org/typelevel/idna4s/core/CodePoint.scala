@@ -159,7 +159,7 @@ final class CodePoint private (val value: Int) extends AnyVal {
    * }}}
    *
    * @note
-   *   These code points are also sometimes referred to as "leading" surrogate code points.
+   *   These code points are also sometimes referred to as "trailing" surrogate code points.
    */
   def isLowSurrogate: Boolean =
     value >= 0xdc00 && value <= 0xdfff
