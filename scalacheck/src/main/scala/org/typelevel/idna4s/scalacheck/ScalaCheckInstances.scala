@@ -188,6 +188,7 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
   implicit final def cogenDelimiter: Cogen[Delimiter] =
     Cogen[Int].contramap(_.value)
 
+  @nowarn("msg=deprecated")
   implicit final def shrinkDelimiter: Shrink[Delimiter] =
     Shrink(value =>
       shrinkCodePoint
