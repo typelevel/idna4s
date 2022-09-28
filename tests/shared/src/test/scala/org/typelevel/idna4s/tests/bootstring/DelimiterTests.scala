@@ -67,7 +67,7 @@ final class DelimiterTests extends DisciplineSuite {
         loop(Character.MAX_SURROGATE + 1)
       } else {
         val d: Delimiter = Delimiter.unsafeFromInt(i)
-        assertEquals(d.value, i)
+        assertEquals(d.codePointInt, i)
 
         d.codePoint.asChars match {
           case Left(x) =>

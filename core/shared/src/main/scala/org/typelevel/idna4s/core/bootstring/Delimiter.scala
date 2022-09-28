@@ -60,14 +60,14 @@ import org.typelevel.idna4s.core._
  * @see
  *   [[https://www.unicode.org/versions/Unicode15.0.0/ch03.pdf#G2630 Unicode Surrogates]]
  */
-final class Delimiter private (val value: Int) extends AnyVal {
+final class Delimiter private (val codePointInt: Int) extends AnyVal {
 
   /**
    * The code point as a [[CodePoint]]. Mostly for informational purposes, such as error
    * messages.
    */
   final def codePoint: CodePoint =
-    CodePoint.unsafeFromInt(value)
+    CodePoint.unsafeFromInt(codePointInt)
 
   final override def toString: String =
     s"Delimiter(codePoint = ${codePoint})"
@@ -79,7 +79,7 @@ object Delimiter {
     new Delimiter(value)
 
   def unapply(value: Delimiter): Some[Int] =
-    Some(value.value)
+    Some(value.codePointInt)
 
   /**
    * The [[Delimiter]] used by the Punycode variant of Bootstring, '-'.
@@ -197,7 +197,7 @@ object Delimiter {
         x.hashCode
 
       override def compare(x: Delimiter, y: Delimiter): Int =
-        x.value.compare(y.value)
+        x.codePointInt.compare(y.codePointInt)
     }
 
   implicit def orderingInstance: Ordering[Delimiter] =
