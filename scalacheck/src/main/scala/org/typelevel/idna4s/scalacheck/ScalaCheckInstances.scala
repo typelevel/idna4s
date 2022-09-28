@@ -31,6 +31,7 @@ import org.typelevel.idna4s.core.uts46._
 import org.typelevel.idna4s.core.bootstring._
 import scala.annotation.nowarn
 
+@nowarn("msg=deprecated")
 private[scalacheck] trait ScalaCheckInstances extends Serializable {
 
   implicit final def chooseCodePoint: Choose[CodePoint] =
@@ -42,7 +43,6 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
   implicit final def cogenCodePoint: Cogen[CodePoint] =
     Cogen[Int].contramap(_.value)
 
-  @nowarn("msg=deprecated")
   implicit final def shrinkCodePoint: Shrink[CodePoint] = {
 
     // Based on ShrinkIntegral from ScalaCheck, but without negation.
@@ -188,7 +188,6 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
   implicit final def cogenDelimiter: Cogen[Delimiter] =
     Cogen[Int].contramap(_.value)
 
-  @nowarn("msg=deprecated")
   implicit final def shrinkDelimiter: Shrink[Delimiter] =
     Shrink(value =>
       shrinkCodePoint
