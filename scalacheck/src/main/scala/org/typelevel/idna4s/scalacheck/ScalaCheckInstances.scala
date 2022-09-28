@@ -173,7 +173,7 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
     Cogen[Int].contramap(_.value)
 
   implicit final def chooseDelimiter: Choose[Delimiter] =
-    Choose.xmap[Int, Delimiter](Delimiter.unsafeFromInt, _.value)
+    Choose.xmap[Int, Delimiter](Delimiter.unsafeFromInt, _.codePointInt)
 
   implicit final def arbDelimiter: Arbitrary[Delimiter] =
     Arbitrary(
@@ -186,7 +186,7 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
     )
 
   implicit final def cogenDelimiter: Cogen[Delimiter] =
-    Cogen[Int].contramap(_.value)
+    Cogen[Int].contramap(_.codePointInt)
 
   implicit final def shrinkDelimiter: Shrink[Delimiter] =
     Shrink(value =>
