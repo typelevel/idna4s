@@ -117,9 +117,9 @@ final class CodePoint private (val value: Int) extends AnyVal {
    * Unicode characters, one does not want to directly operation on partial surrogate values. If
    * you pull one of these values directly out of a `String` and you intend to be operating on
    * code points or Unicode characters, that likely means you have either indexed the `String`
-   * incorrectly, e.g. by char values not by code points or that the `String` not valid Unicode
-   * malformed. The `String` type does not validated that the component char values make up a
-   * valid Unicode character sequence, only that they are all valid code points.
+   * incorrectly, e.g. by char values not by code points or that the `String` is not valid
+   * Unicode (malformed). The `String` type does not validated that the component char values
+   * make up a valid Unicode character sequence, only that they are all valid code points.
    *
    * {{{
    * // This does not have, and will never have,

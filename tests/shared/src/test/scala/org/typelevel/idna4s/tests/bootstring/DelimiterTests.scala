@@ -139,10 +139,16 @@ final class DelimiterTests extends DisciplineSuite {
   }
 
   test("Literal syntax for invalid literals should not compile") {
-    compileErrors("""delimiter"DERP"""").contains(
-      "Given value is not a valid non-negative integral value")
-    compileErrors("""delimiter"F"""").contains(
-      "Given value is not a valid non-negative integral value")
+    assert(
+      compileErrors("""delimiter"DERP"""").contains(
+        "A bootstring delimiter must be a single code point, the given value is invalid: DERP"
+      )
+    )
+    assert(
+      compileErrors("""delimiter""""").contains(
+        "A bootstring delimiter must be a single code point, the given value is invalid:"
+      )
+    )
   }
 
   // Laws //

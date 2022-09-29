@@ -84,7 +84,12 @@ object Damp {
    * outside the valid domain for a [[Damp]] value.
    */
   def fromString(value: String): Either[String, Damp] =
-    Either.catchNonFatal(unsafeFromString(value.trim)).leftMap(_.getLocalizedMessage)
+    Either.catchNonFatal(unsafeFromString(value.trim)).leftMap {
+      case _: NumberFormatException =>
+        s"Damp values must be int32 values > 1: ${value}"
+      case otherwise =>
+        otherwise.getLocalizedMessage
+    }
 
   def unapply(value: Damp): Some[Int] =
     Some(value.value)

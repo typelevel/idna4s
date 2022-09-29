@@ -27,7 +27,7 @@ import cats.syntax.all._
 import org.typelevel.idna4s.core._
 
 /**
- * An Unicode code point which acts as a delimiter between the basic code points and the
+ * A Unicode code point which acts as a delimiter between the basic code points and the
  * non-basic code points in a Bootstring encoded `String`.
  *
  * From RFC-3492,
