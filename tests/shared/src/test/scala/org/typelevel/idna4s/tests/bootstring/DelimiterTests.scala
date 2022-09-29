@@ -140,12 +140,12 @@ final class DelimiterTests extends DisciplineSuite {
 
   test("Literal syntax for invalid literals should not compile") {
     assert(
-      compileErrors("""delimiter"DERP"""").contains(
+      clue(compileErrors("""delimiter"DERP"""")).contains(
         "A bootstring delimiter must be a single code point, the given value is invalid: DERP"
       )
     )
     assert(
-      compileErrors("""delimiter""""").contains(
+      clue(compileErrors("""delimiter""""")).contains(
         "A bootstring delimiter must be a single code point, the given value is invalid:"
       )
     )
