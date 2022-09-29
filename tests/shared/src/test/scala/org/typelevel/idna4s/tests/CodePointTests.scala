@@ -119,10 +119,15 @@ final class CodePointTests extends DisciplineSuite {
   }
 
   test("Literal syntax for invalid literals should not compile") {
-    compileErrors("""codePoint"DERP"""").contains(
-      "Given value is not a valid non-negative integral value")
-    compileErrors("""codePoint"F"""").contains(
-      "Given value is not a valid non-negative integral value")
+    assert(
+      clue(compileErrors("""codePoint"DERP""""))
+        .contains("Given value is not a valid non-negative integral value")
+    )
+
+    assert(
+      clue(compileErrors("""codePoint"F""""))
+        .contains("Given value is not a valid non-negative integral value")
+    )
   }
 
   test("CodePoint.toString should not throw any NPEs") {
