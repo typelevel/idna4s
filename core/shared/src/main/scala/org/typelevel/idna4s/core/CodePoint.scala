@@ -72,7 +72,7 @@ final class CodePoint private (val value: Int) extends AnyVal {
   def asChars: Either[Char, (Char, Char)] =
     Character.toChars(value).toList match {
       case high :: low :: Nil =>
-        Right(high, low)
+        Right((high, low))
       case value :: Nil =>
         Left(value)
       case _ =>
