@@ -28,8 +28,10 @@ import org.scalacheck._
 import org.typelevel.idna4s.core._
 import org.typelevel.idna4s.core.uts46.CodePointMapper._
 import org.typelevel.idna4s.core.uts46._
+import org.typelevel.idna4s.core.bootstring._
 import scala.annotation.nowarn
 
+@nowarn("msg=deprecated")
 private[scalacheck] trait ScalaCheckInstances extends Serializable {
 
   implicit final def chooseCodePoint: Choose[CodePoint] =
@@ -41,7 +43,6 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
   implicit final def cogenCodePoint: Cogen[CodePoint] =
     Cogen[Int].contramap(_.value)
 
-  @nowarn("msg=deprecated")
   implicit final def shrinkCodePoint: Shrink[CodePoint] = {
 
     // Based on ShrinkIntegral from ScalaCheck, but without negation.
@@ -144,4 +145,53 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
       Gen.choose(Int.MinValue, -1),
       Gen.choose(Character.MAX_CODE_POINT + 1, Int.MaxValue)
     )
+
+  final def genInvalidSurrogatePair: Gen[(Char, Char)] = {
+    val genNotSurrogate: Gen[Char] =
+      Gen.choose(Char.MinValue, (Character.MIN_SURROGATE.toInt - 1).toChar)
+    val genNotLowSurrogate: Gen[Char] =
+      Gen.oneOf(
+        genNotSurrogate,
+        Gen.choose(Character.MIN_HIGH_SURROGATE, Character.MAX_HIGH_SURROGATE)
+      )
+    val genNotHighSurrogate: Gen[Char] =
+      Gen.oneOf(
+        genNotSurrogate,
+        Gen.choose(Character.MIN_LOW_SURROGATE, Character.MAX_LOW_SURROGATE)
+      )
+
+    genNotLowSurrogate.flatMap(notLow => genNotHighSurrogate.map(notHigh => notLow -> notHigh))
+  }
+
+  implicit final def chooseDamp: Choose[Damp] =
+    Choose.xmap[Int, Damp](Damp.unsafeFromInt, _.value)
+
+  implicit final def arbDamp: Arbitrary[Damp] =
+    Arbitrary(Gen.choose(Damp.MinValue, Damp.MaxValue))
+
+  implicit final def cogenDamp: Cogen[Damp] =
+    Cogen[Int].contramap(_.value)
+
+  implicit final def chooseDelimiter: Choose[Delimiter] =
+    Choose.xmap[Int, Delimiter](Delimiter.unsafeFromInt, _.codePointInt)
+
+  implicit final def arbDelimiter: Arbitrary[Delimiter] =
+    Arbitrary(
+      Gen
+        .oneOf(
+          Gen.choose(0, Character.MIN_SURROGATE - 1),
+          Gen.choose(Character.MAX_SURROGATE + 1, Character.MAX_CODE_POINT)
+        )
+        .map(Delimiter.unsafeFromInt)
+    )
+
+  implicit final def cogenDelimiter: Cogen[Delimiter] =
+    Cogen[Int].contramap(_.codePointInt)
+
+  implicit final def shrinkDelimiter: Shrink[Delimiter] =
+    Shrink(value =>
+      shrinkCodePoint
+        .shrink(value.codePoint)
+        .filterNot(_.isSurrogate)
+        .map(Delimiter.unsafeFromCodePoint))
 }

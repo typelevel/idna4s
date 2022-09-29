@@ -144,6 +144,52 @@ final class CodePointTests extends DisciplineSuite {
     loop(0)
   }
 
+  test("CodePoint.isHighSurrogate aggress with java.lang.Character") {
+    @tailrec
+    def loop(i: Int): Unit =
+      if (i > Character.MAX_HIGH_SURROGATE) {
+        ()
+      } else {
+        assertEquals(
+          CodePoint.unsafeFromInt(i).isHighSurrogate,
+          Character.isHighSurrogate(i.toChar))
+
+        loop(i + 1)
+      }
+
+    loop(Character.MIN_HIGH_SURROGATE)
+  }
+
+  test("CodePoint.isLowSurrogate aggress with java.lang.Character") {
+    @tailrec
+    def loop(i: Int): Unit =
+      if (i > Character.MAX_LOW_SURROGATE) {
+        ()
+      } else {
+        assertEquals(
+          CodePoint.unsafeFromInt(i).isLowSurrogate,
+          Character.isLowSurrogate(i.toChar))
+
+        loop(i + 1)
+      }
+
+    loop(Character.MIN_LOW_SURROGATE)
+  }
+
+  test("CodePoint.isSurrogate aggress with java.lang.Character") {
+    @tailrec
+    def loop(i: Int): Unit =
+      if (i > Character.MAX_SURROGATE) {
+        ()
+      } else {
+        assertEquals(CodePoint.unsafeFromInt(i).isSurrogate, Character.isSurrogate(i.toChar))
+
+        loop(i + 1)
+      }
+
+    loop(Character.MIN_SURROGATE)
+  }
+
   // Laws //
 
   checkAll("Order[CodePoint]", OrderTests[CodePoint].order)

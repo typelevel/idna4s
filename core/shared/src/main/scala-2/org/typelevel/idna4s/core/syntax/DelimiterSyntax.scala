@@ -19,19 +19,27 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.typelevel.idna4s.scalacheck
+package org.typelevel.idna4s.core.syntax
 
-import org.scalacheck._
-import org.scalacheck.Gen.Choose
 import org.typelevel.idna4s.core.bootstring._
+import org.typelevel.literally.Literally
 
-private[scalacheck] trait BootstringScalaCheckInstances extends Serializable {
-  implicit final def chooseDamp: Choose[Damp] =
-    Choose.xmap[Int, Damp](Damp.unsafeFromInt, _.value)
+private[syntax] trait DelimiterSyntax {
+  implicit class DelimiterContext(val sc: StringContext) {
+    def delimiter(args: Any*): Delimiter = macro DelimiterSyntax.delimiter.make
+  }
+}
 
-  implicit final def arbDamp: Arbitrary[Damp] =
-    Arbitrary(Gen.choose(Damp.MinValue, Damp.MaxValue))
+private object DelimiterSyntax {
 
-  implicit final def cogenDamp: Cogen[Damp] =
-    Cogen[Int].contramap(_.value)
+  private object delimiter extends Literally[Delimiter] {
+    def validate(c: Context)(s: String): Either[String, c.Expr[Delimiter]] = {
+      import c.universe._
+
+      Delimiter.fromString(s).map(_ => c.Expr(q"Delimiter.unsafeFromString($s)"))
+    }
+
+    def make(c: Context)(args: c.Expr[Any]*): c.Expr[Delimiter] =
+      apply(c)(args: _*)
+  }
 }

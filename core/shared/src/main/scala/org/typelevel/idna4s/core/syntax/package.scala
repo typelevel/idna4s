@@ -26,4 +26,5 @@ package object syntax {
   object bootstring extends BootstringSyntax
   object bias extends BiasSyntax
   object codePoint extends CodePointSyntax
+  object delimiter extends DelimiterSyntax
 }
