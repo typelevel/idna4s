@@ -63,11 +63,12 @@ final class CodePoint private (val value: Int) extends AnyVal {
   def utf16CharCount: Int =
     if (value >= 0x10000) 2 else 1
 
-  /** Get the UTF-16 chars represented by this [[CodePoint]].
-    *
-    * This will be 1 or 2 char values depending on if the value is represented
-    * by a UTF-16 surrogate pair or not.
-    */
+  /**
+   * Get the UTF-16 chars represented by this [[CodePoint]].
+   *
+   * This will be 1 or 2 char values depending on if the value is represented by a UTF-16
+   * surrogate pair or not.
+   */
   def asChars: Either[Char, (Char, Char)] =
     Character.toChars(value).toList match {
       case high :: low :: Nil =>
