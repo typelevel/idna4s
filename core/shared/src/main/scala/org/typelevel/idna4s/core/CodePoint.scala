@@ -64,10 +64,28 @@ final class CodePoint private (val value: Int) extends AnyVal {
     if (value >= 0x10000) 2 else 1
 
   /**
+   * Get the UTF-16 chars represented by this [[CodePoint]].
+   *
+   * This will be 1 or 2 char values depending on if the value is represented by a UTF-16
+   * surrogate pair or not.
+   */
+  def asChars: Either[Char, (Char, Char)] =
+    Character.toChars(value).toList match {
+      case high :: low :: Nil =>
+        Right((high, low))
+      case value :: Nil =>
+        Left(value)
+      case _ =>
+        // Impossible
+        throw new AssertionError(
+          s"CodePoint converted to invalid number of UTF-16 characters. It must be 1 or 2, but got ${asCharList.length}. This is likely a bug in inda4s.")
+    }
+
+  /**
    * Convert this code point to a list of UTF-16 char values, either size 1 or 2 depending on if
    * this code point is represents a surrogate pair in UTF-16.
    */
-  def toChars: List[Char] =
+  def asCharList: List[Char] =
     Character.toChars(value).toList
 
   /**
@@ -85,13 +103,13 @@ final class CodePoint private (val value: Int) extends AnyVal {
    * scala> val low = codePoint"0xdc00"
    * val low: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 56320, hexValue = 0xDC00, name = LOW SURROGATES DC00, utf16CharCount = 1)
    *
-   * scala> val combined = CodePoint.unsafeFromInt(Character.toCodePoint(high.toChars.head, low.toChars.head))
+   * scala> val combined = CodePoint.unsafeFromInt(Character.toCodePoint(high.asChars.head, low.asChars.head))
    * val combined: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 65536, hexValue = 0x10000, name = LINEAR B SYLLABLE B008 A, utf16CharCount = 2)
    *
-   * scala> high == CodePoint.fromChar(combined.toChars.head)
+   * scala> high == CodePoint.fromChar(combined.asChars.head)
    * val res0: Boolean = true
    *
-   * scala> low == CodePoint.fromChar(combined.toChars.tail.head)
+   * scala> low == CodePoint.fromChar(combined.asChars.tail.head)
    * val res1: Boolean = true
    * }}}
    *
@@ -132,13 +150,13 @@ final class CodePoint private (val value: Int) extends AnyVal {
    * scala> val low = codePoint"0xdc00"
    * val low: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 56320, hexValue = 0xDC00, name = LOW SURROGATES DC00, utf16CharCount = 1)
    *
-   * scala> val combined = CodePoint.unsafeFromInt(Character.toCodePoint(high.toChars.head, low.toChars.head))
+   * scala> val combined = CodePoint.unsafeFromInt(Character.toCodePoint(high.asChars.head, low.asChars.head))
    * val combined: org.typelevel.idna4s.core.CodePoint = CodePoint(value = 65536, hexValue = 0x10000, name = LINEAR B SYLLABLE B008 A, utf16CharCount = 2)
    *
-   * scala> high == CodePoint.fromChar(combined.toChars.head)
+   * scala> high == CodePoint.fromChar(combined.asChars.head)
    * val res0: Boolean = true
    *
-   * scala> low == CodePoint.fromChar(combined.toChars.tail.head)
+   * scala> low == CodePoint.fromChar(combined.asChars.tail.head)
    * val res1: Boolean = true
    * }}}
    *

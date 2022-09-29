@@ -22,6 +22,7 @@
 package org.typelevel.idna4s.tests
 
 import cats.kernel.laws.discipline._
+import cats.syntax.all._
 import munit._
 import org.scalacheck.Prop._
 import org.scalacheck._
@@ -56,7 +57,7 @@ final class CodePointTests extends DisciplineSuite {
         val cp: CodePoint = CodePoint.unsafeFromInt(i)
         assertEquals(cp.value, i)
 
-        cp.toChars match {
+        cp.asCharList match {
           case x :: Nil =>
             assertEquals(CodePoint.unsafeFromInt(x.toInt), cp)
           case x :: y :: Nil =>
@@ -188,6 +189,41 @@ final class CodePointTests extends DisciplineSuite {
       }
 
     loop(Character.MIN_SURROGATE)
+  }
+
+  test("CodePoint's information methods should be consistent with each other.") {
+
+    @tailrec
+    def loop(i: Int): Unit =
+      if (i > Character.MAX_CODE_POINT) {
+        ()
+      } else {
+        val cp: CodePoint = CodePoint.unsafeFromInt(i)
+
+        cp.utf16CharCount match {
+          case 1 =>
+            assert(cp.asChars.isLeft)
+            assertEquals(cp.asCharList.size, 1)
+            assertEquals(cp.asCharList.headOption, cp.asChars.swap.toOption)
+          case 2 =>
+            assert(cp.asChars.isRight)
+            assertEquals(cp.asCharList.size, 2)
+            assertEquals(
+              cp.asCharList,
+              cp.asChars.map { case (a, b) => List(a, b) }.toOption.toList.flatten)
+            assertEquals(cp.isSurrogate, false)
+            assertEquals(cp.isLowSurrogate, false)
+            assertEquals(cp.isHighSurrogate, false)
+          case otherwise =>
+            fail(s"Impossible utf16CharCount: ${otherwise}")
+        }
+
+        assert((cp.isSurrogate === false) || (cp.isLowSurrogate ^ cp.isHighSurrogate))
+
+        loop(i + 1)
+      }
+
+    loop(0)
   }
 
   // Laws //

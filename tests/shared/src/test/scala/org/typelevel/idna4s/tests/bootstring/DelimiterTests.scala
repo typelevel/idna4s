@@ -69,13 +69,11 @@ final class DelimiterTests extends DisciplineSuite {
         val d: Delimiter = Delimiter.unsafeFromInt(i)
         assertEquals(d.codePointInt, i)
 
-        d.codePoint.toChars match {
-          case x :: Nil =>
+        d.codePoint.asChars match {
+          case Left(x) =>
             assertEquals(Delimiter.unsafeFromChar(x).codePoint, d.codePoint)
-          case x :: y :: Nil =>
+          case Right((x, y)) =>
             assertEquals(Delimiter.unsafeFromInt(Character.toCodePoint(x, y)), d)
-          case _ =>
-            fail(s"Delimiter ${i} did not yield 1 or 2 chars.")
         }
 
         loop(i + 1)
@@ -142,12 +140,12 @@ final class DelimiterTests extends DisciplineSuite {
 
   test("Literal syntax for invalid literals should not compile") {
     assert(
-      compileErrors("""delimiter"DERP"""").contains(
+      clue(compileErrors("""delimiter"DERP"""")).contains(
         "A bootstring delimiter must be a single code point, the given value is invalid: DERP"
       )
     )
     assert(
-      compileErrors("""delimiter""""").contains(
+      clue(compileErrors("""delimiter""""")).contains(
         "A bootstring delimiter must be a single code point, the given value is invalid:"
       )
     )
