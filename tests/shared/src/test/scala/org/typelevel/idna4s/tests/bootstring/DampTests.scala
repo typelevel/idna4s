@@ -52,10 +52,17 @@ final class DampTests extends DisciplineSuite {
   }
 
   test("Literal syntax for invalid literals should not compile") {
-    compileErrors("""damp"DERP"""").contains(
-      "Given value is not a valid non-negative integral value")
-    compileErrors("""damp"F"""").contains(
-      "Given value is not a valid non-negative integral value")
+    assert(
+      compileErrors("""damp"DERP"""").contains(
+        "Damp values must be int32 values > 1: DERP"
+      )
+    )
+
+    assert(
+      compileErrors("""damp"-1"""").contains(
+        "According to RFC-3492 damp values must be >= 2: -1"
+      )
+    )
   }
 
   // Laws //
