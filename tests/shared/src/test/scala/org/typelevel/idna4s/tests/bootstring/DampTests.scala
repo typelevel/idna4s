@@ -53,13 +53,13 @@ final class DampTests extends DisciplineSuite {
 
   test("Literal syntax for invalid literals should not compile") {
     assert(
-      compileErrors("""damp"DERP"""").contains(
+      clue(compileErrors("""damp"DERP"""")).contains(
         "Damp values must be int32 values > 1: DERP"
       )
     )
 
     assert(
-      compileErrors("""damp"-1"""").contains(
+      clue(compileErrors("""damp"-1"""")).contains(
         "According to RFC-3492 damp values must be >= 2: -1"
       )
     )
