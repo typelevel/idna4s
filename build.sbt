@@ -122,7 +122,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     Compile / sourceGenerators ++= List(
       (Compile / sourceManaged)
         .map(
-          UTS46CodeGen.generate(_, Some(UnicodeVersion))
+          CodeGen.generate(_, UnicodeVersion)
         )
         .taskValue
     )
