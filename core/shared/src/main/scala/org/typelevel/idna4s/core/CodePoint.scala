@@ -276,6 +276,20 @@ object CodePoint extends CodePointPlatform {
         e.getLocalizedMessage
     }
 
+  /** A method to attempt to get a string description of an int32 value which is
+    * assumed to be a code point.
+    *
+    * The primary goal of this method is to create strings for error
+    * messages. We would like to have a rich description of the code point if
+    * possible, but in the event the int32 isn't a code point we don't want to
+    * fail.
+    */
+  def descriptionFromInt(value: Int): String =
+    CodePoint.fromInt(value).fold(
+      _ => s"Value is outside the domain of valid code points: ${value}",
+      _.toString
+    )
+
   implicit val hashAndOrderForCodePoint: Hash[CodePoint] with Order[CodePoint] =
     new Hash[CodePoint] with Order[CodePoint] {
       override def hash(x: CodePoint): Int = x.hashCode
