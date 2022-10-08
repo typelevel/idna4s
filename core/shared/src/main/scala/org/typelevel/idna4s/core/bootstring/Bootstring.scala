@@ -21,12 +21,14 @@
 
 package org.typelevel.idna4s.core.bootstring
 
-import scala.annotation.tailrec
 import cats.syntax.all._
-import java.nio.IntBuffer
-import scala.collection.immutable.SortedSet
-import scala.collection.immutable.SortedMap
 import java.lang.Math
+import java.nio.IntBuffer
+import org.typelevel.idna4s.core._
+import scala.annotation.tailrec
+import scala.collection.immutable.SortedMap
+import scala.collection.immutable.SortedSet
+import scala.util.control.NoStackTrace
 
 object Bootstring {
 
@@ -57,8 +59,7 @@ object Bootstring {
     } else {
       // I do not expect this branch will ever be executed under normal
       // circumstances.
-      throw new RuntimeException(
-        s"Can not resize buffer as it would exceed largest valid size ${Int.MaxValue}. What are you doing?")
+      throw BootstringException.UnableToResizeBufferException
     }
 
   /**
@@ -101,7 +102,7 @@ object Bootstring {
       params: BootstringParams
   )(
       value: String
-  ): Either[String, String] = {
+  ): Either[BootstringException, String] = {
 
     // Insert a code point into an `IntBuffer`, automatically resizing it, if
     // the `IntBuffer` is at capacity.
@@ -141,8 +142,9 @@ object Bootstring {
             (buffer.put(codePoint), nonBasic)
           } else if (codePoint < params.initialN) {
             // Only occurs in unusual Bootstring usage.
-            throw new RuntimeException(
-              s"Input contains a non-basic code point < the initial N value. Code Point: ${codePoint}, Initial N: ${params.initialN}.")
+            throw BootstringException.InvalidNonBasicCodePointException(
+              codePoint,
+              params.initialN)
           } else {
             (buffer, nonBasic + codePoint)
           }
@@ -177,8 +179,7 @@ object Bootstring {
               } match {
                 case (buffer, bias, delta, h) =>
                   if (delta === Int.MaxValue) {
-                    throw new RuntimeException(
-                      "Delta will overflow if encoding continues, this probably means you are attempting to encode a String which is too large for bootstring.")
+                    throw BootstringException.DeltaOverflowException
                   } else {
                     (buffer, codePoint + 1, delta + 1, h, bias)
                   }
@@ -191,8 +192,12 @@ object Bootstring {
           Right(new String(buffer.array, 0, pos))
       }
     } catch {
+      case e: BootstringException =>
+        Left(e)
       case e: Exception =>
-        Left(e.getLocalizedMessage)
+        Left(
+          BootstringException
+            .WrappedException("Caught unhandled exception during bootstring encoding.", e))
     }
   }
 
@@ -203,7 +208,7 @@ object Bootstring {
       params: BootstringParams
   )(
       value: String
-  ): Either[String, String] = {
+  ): Either[BootstringException, String] = {
     type Index = Int
 
     // Insert a value into an `IntBuffer` at an index. If the `IntBuffer`
@@ -255,8 +260,7 @@ object Bootstring {
               }
           }
         case Nil =>
-          throw new RuntimeException(
-            "Reached end of input in incomplete decoding state. This is not a validly encoded Bootstring string.")
+          throw BootstringException.UnexpectedEndOfInputException
       }
 
     @tailrec
@@ -305,8 +309,7 @@ object Bootstring {
                         )
                     }
                   } else {
-                    throw new RuntimeException(
-                      s"Decoded code point is basic. This is invalid for Bootstring decoding. Code Point: ${nextN}")
+                    throw BootstringException.BasicCodePointInNonBasicSection(nextN)
                   }
               }
           }
@@ -334,6 +337,7 @@ object Bootstring {
                   new String(out.array, 0, pos)
                 } {
                   case (pos, _) =>
+                    // TODO: This case should be impossible. Refactor once that is verified.
                     throw new RuntimeException(
                       s"Exhausted basic code points at index ${out.position()}, but we still have ${nonBasicCodePointMap.size} non basic code points to encode (next index is at ${pos}).")
                 }
@@ -365,8 +369,7 @@ object Bootstring {
             if (params.isBasicCodePoint(cp)) {
               (cp +: basic, nonBasic, basicCodePointLength + 1, flag)
             } else {
-              throw new RuntimeException(
-                s"Encountered non-basic codepoint win the basic only code point region of the Bootstring encoded string. This means this not a properly encoded Bootstring value. Code Point: ${cp}.")
+              throw BootstringException.NonBasicCodePointInBasicSection(cp)
             }
         }
 
@@ -389,8 +392,90 @@ object Bootstring {
         )
       )
     } catch {
+      case e: BootstringException =>
+        Left(e)
       case e: Exception =>
-        Left(e.getLocalizedMessage)
+        Left(
+          BootstringException
+            .WrappedException("Caught unhandled exception during bootstring decodeing.", e))
     }
+  }
+
+  /**
+   * An error which occurred during the application of the Bootstring algorithm.
+   */
+  sealed trait BootstringException extends IDNAException with NoStackTrace
+
+  // Developer's note: Do not expose the type of any of the ADT
+  // sub-members. We want to hide that for bincomat.
+
+  object BootstringException {
+
+    private def codePointDescription(value: Int): String =
+      CodePoint
+        .fromInt(value)
+        .fold(
+          // The first case should be impossible.
+          _ => s"Value is outside the domain of valid code points: ${value}",
+          _.toString
+        )
+
+    private[Bootstring] case object UnableToResizeBufferException extends BootstringException {
+      override val getMessage: String =
+        s"Can not resize buffer as it would exceed largest valid size ${Int.MaxValue}. What are you doing?"
+
+      final override def toString: String =
+        s"UnableToResizeBufferException(${getMessage})"
+    }
+
+    final private[Bootstring] case class InvalidNonBasicCodePointException(
+        invalidCodePoint: Int,
+        initialN: Int)
+        extends BootstringException {
+
+      final override def getMessage: String =
+        s"Input contains a non-basic code point < the initial N value. Code Point: ${codePointDescription(
+            invalidCodePoint)}, Initial N: ${initialN}."
+
+      final override def toString: String =
+        s"InvalidNonBasicCodePointException(invalidCodePoint = ${codePointDescription(
+            invalidCodePoint)}, initialN = ${initialN}, getMessage = ${getMessage})"
+    }
+
+    private[Bootstring] case object DeltaOverflowException extends BootstringException {
+      final override val getMessage: String =
+        "Delta will overflow if encoding continues, this probably means you are attempting to encode a String which is too large for bootstring."
+
+      final override def toString: String =
+        s"DeltaOverflowException(${getMessage})"
+    }
+
+    private[Bootstring] case object UnexpectedEndOfInputException extends BootstringException {
+      final override val getMessage: String =
+        "Reached end of input in incomplete decoding state. This is not a validly encoded Bootstring string."
+    }
+
+    final private[Bootstring] case class BasicCodePointInNonBasicSection(codePoint: Int)
+        extends BootstringException {
+      final override def getMessage: String =
+        s"Decoded a basic code point in the non-basic section of the input. All basic code points must occur in the basic section. Code point: ${codePointDescription(codePoint)}"
+    }
+
+    final private[Bootstring] case class NonBasicCodePointInBasicSection(codePoint: Int)
+        extends BootstringException {
+      final override def getMessage: String =
+        s"Decoded a non-basic code point in the basic section of the input. All non-basic code points must occurr in the non-basic section. Code point: ${codePointDescription(codePoint)}"
+    }
+
+    final private[Bootstring] case class WrappedException(
+        override val getMessage: String,
+        cause: Exception)
+        extends BootstringException {
+      final override def getCause: Throwable = cause
+
+      final override def toString: String =
+        s"WrappedException(cause = ${cause}, cause.getLocalizedMessage = ${cause.getLocalizedMessage})"
+    }
+
   }
 }

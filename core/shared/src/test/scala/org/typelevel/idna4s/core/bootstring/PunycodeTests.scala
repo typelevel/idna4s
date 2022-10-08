@@ -28,9 +28,9 @@ final class PunycodeTests extends ScalaCheckSuite {
 
   test("The Punycode sample strings from RFC 3492 should encoded/decode correctly") {
     PunycodeTestStrings.foreach { (value: PunycodeTestString) =>
-      val encoded: Either[String, String] =
+      val encoded: Either[Bootstring.BootstringException, String] =
         Bootstring.encodeRaw(BootstringParams.PunycodeParams)(value.raw)
-      val decoded: Either[String, String] =
+      val decoded: Either[Bootstring.BootstringException, String] =
         Bootstring.decodeRaw(BootstringParams.PunycodeParams)(value.encoded)
 
       assertEquals(

@@ -344,7 +344,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
   /**
    * An error that is yielded when mapping an individual code point fails.
    */
-  sealed abstract class CodePointMappingException extends RuntimeException with NoStackTrace {
+  sealed abstract class CodePointMappingException extends IDNAException with NoStackTrace {
 
     /**
      * The index of the start of the Unicode code point in the input where the failure occurred.
@@ -408,7 +408,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
    * An error which is yielded if attempting to map a sequence of Unicode code points with the
    * UTS-46 mapping algorithm fails.
    */
-  sealed abstract class MappingException extends RuntimeException with NoStackTrace {
+  sealed abstract class MappingException extends IDNAException with NoStackTrace {
 
     /**
      * One or more mapping [[CodePointMappingException]].
