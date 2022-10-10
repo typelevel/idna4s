@@ -19,40 +19,26 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.typelevel.idna4s.core.bootstring
+package org.typelevel.idna4s.core
 
-import munit._
+import cats._
 
-final class PunycodeTests extends ScalaCheckSuite {
-  import PunycodeTests._
+/**
+ * Marker trait for IDNA errors.
+ *
+ * Errors in idna4s are usually scoped to sub-domains, e.g. a class of errors for Bootstring, a
+ * class of errors for UTS-46 code point mapping, etc. In many cases we are mandated by the
+ * relevant specifications to return an error ''and'' continue processing, so we often end up in
+ * a situation where we have a partial result and more than one error.
+ *
+ * We use the [[IDNAException]] marker trait so that we can express certain errors in their
+ * domain specific representation, but still aggregate different domains together, e.g. `((a:
+ * NonEmptyList[BootStringException]).widen ++ (b: NonEmptyList[MappingException]).widen):
+ * NonEmptyList[IDNAException]`.
+ */
+trait IDNAException extends RuntimeException
 
-  test("The Punycode sample strings from RFC 3492 should encoded/decode correctly") {
-    PunycodeTestStrings.foreach { (value: PunycodeTestString) =>
-      val encoded: Either[Bootstring.BootstringException, String] =
-        Bootstring.encodeRaw(BootstringParams.PunycodeParams)(value.raw)
-      val decoded: Either[Bootstring.BootstringException, String] =
-        Bootstring.decodeRaw(BootstringParams.PunycodeParams)(value.encoded)
-
-      assertEquals(
-        encoded,
-        Right(value.encoded)
-      )
-
-      assertEquals(
-        decoded,
-        Right(value.raw)
-      )
-    }
-  }
-}
-
-object PunycodeTests {
-  final case class PunycodeTestString(raw: String, encoded: String)
-
-  val PunycodeTestStrings: List[PunycodeTestString] = List(
-    PunycodeTestString(
-      "\u0644\u064A\u0647\u0645\u0627\u0628\u062A\u0643\u0644\u0645\u0648\u0634\u0639\u0631\u0628\u064A\u061F",
-      "egbpdaj6bu4bxfgehfvwxn"
-    )
-  )
+object IDNAException {
+  implicit val showForIDNAException: Show[IDNAException] =
+    Show.fromToString
 }
