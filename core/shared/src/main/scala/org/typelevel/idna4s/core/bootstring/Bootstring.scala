@@ -29,6 +29,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
 import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
 
 object Bootstring {
 
@@ -194,7 +195,7 @@ object Bootstring {
     } catch {
       case e: BootstringException =>
         Left(e)
-      case e: Exception =>
+      case NonFatal(e) =>
         Left(
           BootstringException
             .WrappedException("Caught unhandled exception during bootstring encoding.", e))
@@ -394,10 +395,10 @@ object Bootstring {
     } catch {
       case e: BootstringException =>
         Left(e)
-      case e: Exception =>
+      case NonFatal(e) =>
         Left(
           BootstringException
-            .WrappedException("Caught unhandled exception during bootstring decodeing.", e))
+            .WrappedException("Caught unhandled exception during bootstring decoding.", e))
     }
   }
 
@@ -469,12 +470,10 @@ object Bootstring {
 
     final private[Bootstring] case class WrappedException(
         override val getMessage: String,
-        cause: Exception)
+        override val getCause: Throwable)
         extends BootstringException {
-      final override def getCause: Throwable = cause
-
       final override def toString: String =
-        s"WrappedException(cause = ${cause}, cause.getLocalizedMessage = ${cause.getLocalizedMessage})"
+        s"WrappedException(getMessage = ${getMessage}, getCause = ${getCause}, cause.getLocalizedMessage = ${getCause.getLocalizedMessage})"
     }
 
   }
