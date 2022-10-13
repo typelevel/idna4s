@@ -680,7 +680,7 @@ object UTS46CodeGen {
         } else if (ranges.isEmpty) {
           q"BitSet(..$singles).compact"
         } else {
-          q"List(..$ranges).foldLeft(BitSet(..$singles)){case (acc, value) => value.foldLeft(acc)(_ + _)}.compact"
+          q"List(..$ranges).foldLeft(BitSet(..$singles)){case (acc, range) => acc | BitSet.fromScalaRange(range)}.compact"
         }
       }
 
