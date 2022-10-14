@@ -28,6 +28,7 @@ import org.scalacheck.Prop._
 import org.typelevel.idna4s.core._
 import org.typelevel.idna4s.core.uts46._
 import org.typelevel.idna4s.scalacheck.all._
+import org.typelevel.idna4s.core.syntax.all._
 
 final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPlatformTests {
 
@@ -61,5 +62,23 @@ final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPla
   test("All ASCII code points should map without error") {
     // This is really just a check that we don't hit the AssertionError case.
     Range.inclusive(0x0, 0x7a).foreach(value => CodePointMapper.mapIntCodePoint(value).isRight)
+  }
+
+  test(
+    "Deviation ignored characters are dropped only when transitional processing is enabled") {
+    assertEquals(
+      CodePointMapper.mapCodePoint(codePoint"0x200d"),
+      CodePointStatus.Deviation.ignored
+    )
+
+    assertEquals(
+      CodePointMapper.mapCodePoints(true, true)("\u200d"),
+      Right("")
+    )
+
+    assertEquals(
+      CodePointMapper.mapCodePoints(true, false)("\u200d"),
+      Right("\u200d")
+    )
   }
 }

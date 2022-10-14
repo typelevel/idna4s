@@ -241,7 +241,11 @@ object CodePointMapper extends GeneratedCodePointMapper {
             }
           } else if (deviationIgnored(value)) {
             // DEVIATION_IGNORED
-            loop(acc, errors, nextIndex)
+            if (transitionalProcessing) {
+              loop(acc, errors, nextIndex)
+            } else {
+              loop(acc.appendCodePoint(value), errors, nextIndex)
+            }
           } else {
             // Should be impossible
             throw new AssertionError(
