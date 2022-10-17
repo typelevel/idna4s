@@ -26,7 +26,7 @@ import scala.util.matching._
  */
 object UnicodeDataCodeGen {
 
-  final private val BaseName          = "UnicodeData"
+  final private val BaseName                  = "UnicodeData"
   final private val BaseTypeName: String      = s"${BaseName}Base"
   final private val GeneratedTypeName: String = s"Generated${BaseName}"
 
