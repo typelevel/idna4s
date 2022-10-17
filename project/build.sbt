@@ -17,8 +17,6 @@ ThisBuild / scalacOptions ++= List(
   "-language:_"
 )
 
-ThisBuild / scalafixDependencies ++= List(
-  "com.github.liancheng" %% "organize-imports" % "0.6.0")
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 ThisBuild / semanticdbEnabled          := true
 ThisBuild / semanticdbVersion          := scalafixSemanticdb.revision
