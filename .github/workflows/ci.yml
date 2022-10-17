@@ -260,7 +260,7 @@ jobs:
         run: sbt '++${{ matrix.scala }}' tlRelease
 
   scalafix-codegen:
-    name: Scalafix codgen files.
+    name: Scalafix codegen files
     strategy:
       matrix:
         os: [ubuntu-latest]
