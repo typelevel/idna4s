@@ -64,7 +64,7 @@ ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 
 ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
   id = "scalafix-codegen",
-  name = "Scalafix codgen files.",
+  name = "Scalafix codegen files",
   steps = List(
     WorkflowStep.Checkout,
     WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check"))),
