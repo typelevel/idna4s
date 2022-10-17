@@ -58,7 +58,7 @@ private[uts46] trait UnicodeDataBase {
    * These are used to check the ContextJ rules for the UTS-46 validity criteria.
    *
    * The ContextJ rules are part of IDNA 2008, which has an initial description, but it is
-   * possible that the rules can change in the future. They current rules (still consistent with
+   * possible that the rules can change in the future. The current rules (still consistent with
    * IDNA 2008 at the time of writing) are defined by IANA.
    *
    * @see
