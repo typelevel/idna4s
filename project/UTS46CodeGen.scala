@@ -184,6 +184,20 @@ object UTS46CodeGen {
    */
   final private case class UnicodeVersion(value: String) extends AnyVal
 
+  private object UnicodeVersion {
+    implicit val hashAndOrderForUnicodeVersion
+        : Hash[UnicodeVersion] with Order[UnicodeVersion] =
+      new Hash[UnicodeVersion] with Order[UnicodeVersion] {
+        override def hash(x: UnicodeVersion): Int = x.hashCode
+
+        override def compare(x: UnicodeVersion, y: UnicodeVersion): Int =
+          x.value.compare(y.value)
+      }
+
+    implicit def orderingInstance: Ordering[UnicodeVersion] =
+      hashAndOrderForUnicodeVersion.toOrdering
+  }
+
   /**
    * ADT for the IDNA 2008 status associated with some UTS-46 valid code points.
    */
@@ -935,7 +949,7 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
         version.fold(
           Success(rows): Try[Rows]
         )(version =>
-          if (rows.version == version) {
+          if (rows.version === version) {
             Success(rows)
           } else {
             Failure(new RuntimeException(
