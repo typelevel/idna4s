@@ -60,6 +60,17 @@ ThisBuild / scalafixScalaBinaryVersion := {
 
 ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 
+// SBT Typelevel Github Actions
+
+ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
+  id = "scalafix-codegen",
+  name = "Scalafix codegen files",
+  steps = List(
+    WorkflowStep.Checkout,
+    WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check"))),
+  scalas = List(Scala212)
+)
+
 // Projects
 
 lazy val projectName: String = "idna4s"

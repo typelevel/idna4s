@@ -258,3 +258,17 @@ jobs:
 
       - name: Publish
         run: sbt '++${{ matrix.scala }}' tlRelease
+
+  scalafix-codegen:
+    name: Scalafix codegen files
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.12.17]
+        java: [temurin@11]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (fast)
+        uses: actions/checkout@v2
+
+      - run: sbt '++${{ matrix.scala }}' 'reload plugins' 'scalafixAll --check'
