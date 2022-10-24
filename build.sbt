@@ -177,7 +177,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "com.ibm.icu" % "icu4j" % icu4jV from "https://github.com/unicode-org/icu/releases/download/release-72-rc/icu4j-72rc.jar"
+      "com.ibm.icu" % "icu4j" % icu4jV
     ).map(_ % Test)
   )
   .dependsOn(core % Test, scalacheck % Test)
@@ -187,7 +187,7 @@ lazy val benchmarks = project
   .in(file("benchmarks"))
   .settings(
     libraryDependencies ++= List(
-      "com.ibm.icu" % "icu4j" % icu4jV from "https://github.com/unicode-org/icu/releases/download/release-72-rc/icu4j-72rc.jar"
+      "com.ibm.icu" % "icu4j" % icu4jV
     ),
     console / initialCommands := {
       List(
