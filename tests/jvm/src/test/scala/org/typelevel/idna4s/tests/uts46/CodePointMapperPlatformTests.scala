@@ -22,13 +22,14 @@
 package org.typelevel.idna4s.tests.uts46
 
 import cats.syntax.all._
-import munit._
-import org.scalacheck._
-import org.scalacheck.Prop._
-import org.typelevel.idna4s.core.uts46._
 import com.ibm.icu.text.Normalizer2
 import java.lang.StringBuilder
+import java.text.Normalizer
+import munit._
+import org.scalacheck.Prop._
+import org.scalacheck._
 import org.typelevel.idna4s.core.uts46.CodePointMapper._
+import org.typelevel.idna4s.core.uts46._
 
 trait CodePointMapperPlatformTests extends DisciplineSuite {
   import CodePointMapperPlatformTests._
@@ -44,7 +45,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
       //
       // https://github.com/unicode-org/icu/blob/main/icu4j/release-72-rc/classes/core/src/com/ibm/icu/impl/UTS46.java#L366
       val idna4s: Either[MappingException, String] =
-        CodePointMapper.mapCodePoints(false, false)(s)
+        mapCodePoints(s)
       val icu4j: String = icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
 
       idna4s.fold(_.partiallyMappedInput, identity) ?= icu4j
@@ -56,16 +57,58 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     // We have a special case fast path for ASCII code points. This tests that code path.
     forAll(Gen.asciiStr) { ascii =>
       val idna4s: Either[MappingException, String] =
-        CodePointMapper.mapCodePoints(false, false)(ascii)
+        mapCodePoints(ascii)
       val icu4j: String =
         icu4jUTS46Normalizer2.normalize(ascii, new StringBuilder(ascii.size)).toString
 
       idna4s.fold(_.partiallyMappedInput, identity) ?= icu4j
     }
   }
+
+  test("̸ࣶ should be consistent with icu4j") {
+    val s: String = "̸ࣶ"
+    val idna4s: Either[MappingException, String] =
+      mapCodePoints(s)
+    val icu4j: String =
+      icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
+
+    assertEquals(idna4s.fold(_.partiallyMappedInput, identity), icu4j)
+  }
+
+  test("a̸ࣶa should be consistent with icu4j") {
+    val s: String = "a̸ࣶa"
+    val idna4s: Either[MappingException, String] =
+      mapCodePoints(s)
+    val icu4j: String =
+      icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
+
+    assertEquals(idna4s.fold(_.partiallyMappedInput, identity), icu4j)
+  }
+
+  test("涇焑ꈛ਽৷降ٰࣶᕹ should be consistent with icu4j") {
+    val s: String = "涇焑ꈛ਽৷降ٰࣶᕹ"
+    val idna4s: Either[MappingException, String] =
+      mapCodePoints(s)
+    val icu4j: String =
+      icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
+
+    assertEquals(idna4s.fold(_.partiallyMappedInput, identity), icu4j)
+  }
 }
 
 object CodePointMapperPlatformTests {
   val icu4jUTS46Normalizer2: Normalizer2 =
     Normalizer2.getInstance(null, "uts46", Normalizer2.Mode.COMPOSE)
+
+  def nfc(value: String): String =
+    Normalizer.normalize(value, Normalizer.Form.NFC)
+
+  /**
+   * Normalize the text with NFC before mapping the code points. This is ''not'' part of the
+   * UTS-46 mapping step, but it is what the icu4j mapper does. icu4j is likely doing this
+   * because this is required as part of UTS-46 as a whole, that is, their normalizer is doing
+   * more than the UTS-46 mapping step.
+   */
+  def mapCodePoints(value: String): Either[MappingException, String] =
+    CodePointMapper.mapCodePoints(false, false)(nfc(value))
 }
