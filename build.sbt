@@ -12,7 +12,7 @@ def DefaultScalaVersion: String = Scala213
 val catsCollectionsV = "0.9.5"
 val catsV            = "2.8.0"
 val disciplineMunitV = "2.0.0-M3"
-val icu4jV           = "72rc"
+val icu4jV           = "72.1"
 val literallyV       = "1.1.0"
 val munitV           = "1.0.0-M6"
 val scalacheckV      = "1.17.0"
@@ -177,7 +177,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "com.ibm.icu" % "icu4j" % icu4jV from "https://github.com/unicode-org/icu/releases/download/release-72-rc/icu4j-72rc.jar"
+      "com.ibm.icu" % "icu4j" % icu4jV
     ).map(_ % Test)
   )
   .dependsOn(core % Test, scalacheck % Test)
@@ -187,7 +187,7 @@ lazy val benchmarks = project
   .in(file("benchmarks"))
   .settings(
     libraryDependencies ++= List(
-      "com.ibm.icu" % "icu4j" % icu4jV from "https://github.com/unicode-org/icu/releases/download/release-72-rc/icu4j-72rc.jar"
+      "com.ibm.icu" % "icu4j" % icu4jV
     ),
     console / initialCommands := {
       List(
