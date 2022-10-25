@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import org.scalacheck._
 import org.typelevel.idna4s.core.uts46._
+import java.text.Normalizer
 
 @State(Scope.Thread)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -53,7 +54,7 @@ class ICU4J {
 
   @Benchmark
   def idna4sUTS46: Either[CodePointMapper.MappingException, String] =
-    CodePointMapper.mapCodePoints(nextString)
+    CodePointMapper.mapCodePoints(Normalizer.normalize(nextString, Normalizer.Form.NFC))
 
   @Benchmark
   def icu4jUTS46: String =
@@ -63,7 +64,7 @@ class ICU4J {
 
   @Benchmark
   def idna4sUTS46ASCII: Either[CodePointMapper.MappingException, String] =
-    CodePointMapper.mapCodePoints(nextASCIIString)
+    CodePointMapper.mapCodePoints(Normalizer.normalize(nextASCIIString, Normalizer.Form.NFC))
 
   @Benchmark
   def icu4jUTS46ASCII: String =

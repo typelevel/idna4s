@@ -161,7 +161,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       "org.typelevel" %%% "discipline-munit" % disciplineMunitV,
       "org.typelevel" %%% "cats-laws"        % catsV
     ),
-    console / initialCommands := {
+    Test / console / initialCommands := {
       List(
         "cats.",
         "cats.syntax.all.",
