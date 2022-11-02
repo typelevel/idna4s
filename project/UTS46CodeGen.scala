@@ -69,7 +69,7 @@ object UTS46CodeGen {
   /**
    * ADT for the IDNA 2008 status associated with some UTS-46 valid code points.
    */
-  sealed abstract private class IDNA2008Status extends Serializable {
+  sealed abstract private[build] class IDNA2008Status extends Serializable {
     import IDNA2008Status._
 
     final def asString: String =
@@ -79,7 +79,7 @@ object UTS46CodeGen {
       }
   }
 
-  private object IDNA2008Status {
+  private[build] object IDNA2008Status {
 
     /**
      * Valid under UTS-46, but excluded from all domain names under IDNA 2008 for all versions
@@ -697,7 +697,7 @@ import cats.data.NonEmptyList
 import cats.collections.BitSet
 
 private[uts46] abstract class GeneratedCodePointMapper0 extends CodePointMapperBase {
-  override final val unicodeVersion = ${Lit.String(version.value)}
+  override final val unicodeVersion = ${Lit.String(version.asString)}
   $mappedMultiMethod
   ..$mappedMethods
 }
@@ -762,8 +762,9 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
             Left("End of input reached without finding version string.")
           case x :: xs =>
             x match {
-              case unicodeVersionRegex(version) => Right((UnicodeVersion(version), xs))
-              case _                            => parseVersion(xs)
+              case unicodeVersionRegex(version) =>
+                UnicodeVersion.fromString(version).map((_, xs))
+              case _ => parseVersion(xs)
             }
         }
 
@@ -810,7 +811,7 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
       val url: String =
         version.fold(
           makeUrl("latest")
-        )(version => makeUrl(version.value))
+        )(version => makeUrl(version.asString))
 
       fromURL(url).flatMap(rows =>
         // Validate that if an explicit version was specified, that is what we

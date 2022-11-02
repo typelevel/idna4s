@@ -25,7 +25,7 @@ object CodeGen {
    *   the version of Unicode to use to generate the code.
    */
   def generate(baseDir: File, unicodeVersion: String): Seq[File] =
-    UnicodeVersion(unicodeVersion) match {
+    UnicodeVersion.unsafeFromString(unicodeVersion) match {
       case unicodeVersion =>
         NonEmptyList
           .of(

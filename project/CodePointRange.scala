@@ -12,8 +12,6 @@ sealed abstract private[build] class CodePointRange extends Serializable {
   def lower: CodePoint
   def upper: CodePoint
 
-  // final //
-
   final def size: Int = upper.value - lower.value + 1
 
   final override def toString: String =

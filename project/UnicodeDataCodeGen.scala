@@ -51,7 +51,7 @@ object UnicodeDataCodeGen {
    * Generate the source code for the functions, methods, and data derived from
    * `UnicodeData.txt`.
    */
-  private def generatedSource(unicodeData: UnicodeData): Tree = {
+  private def generatedSource(unicodeData: UnicodeData[UnicodeCodePointInfomation]): Tree = {
     val combiningMarkCodePointsRHS: Term =
       combiningMarkExpression(unicodeData)
 
@@ -87,7 +87,8 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
       unicodeVersion: UnicodeVersion): Either[Throwable, Chain[UnicodeDataRow]] =
     Either
       .catchNonFatal(
-        new URL(s"https://www.unicode.org/Public/${unicodeVersion.value}/ucd/UnicodeData.txt"))
+        new URL(
+          s"https://www.unicode.org/Public/${unicodeVersion.asString}/ucd/UnicodeData.txt"))
       .flatMap(
         rowsFromUrl
       )
@@ -96,9 +97,9 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * ADT used to keep track of whether a line in `UnicodeData.txt` represents the start or end
    * of a code point range.
    */
-  sealed abstract private class RangeType extends Product with Serializable
+  sealed abstract private[build] class RangeType extends Product with Serializable
 
-  private object RangeType {
+  private[build] object RangeType {
     case object Start extends RangeType
     case object End   extends RangeType
 
@@ -127,12 +128,12 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
   /**
    * Newtype for the general category associated with a Unicode code point.
    */
-  final private case class GeneralCategory(value: String) extends AnyVal {
+  final private[build] case class GeneralCategory(value: String) extends AnyVal {
     def isCombiningMark: Boolean =
       GeneralCategory.combiningMarkCategories.contains(value.toLowerCase)
   }
 
-  private object GeneralCategory {
+  private[build] object GeneralCategory {
     val combiningMarkCategories: SortedSet[String] =
       SortedSet("Mc", "Me", "Mn").map(_.toLowerCase)
 
@@ -146,16 +147,16 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[GeneralCategory] =
+    implicit def orderingInstance: Ordering[GeneralCategory] =
       hashAndOrderForGeneralCategory.toOrdering
   }
 
   /**
    * Newtype for the name associated with a Unicode code point or range of code points.
    */
-  final private case class Name(value: String) extends AnyVal
+  final private[build] case class Name(value: String) extends AnyVal
 
-  private object Name {
+  private[build] object Name {
     implicit val hashAndOrderForName: Hash[Name] with Order[Name] =
       new Hash[Name] with Order[Name] {
         override def hash(x: Name): Int =
@@ -165,7 +166,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[Name] =
+    implicit def orderingInstance: Ordering[Name] =
       hashAndOrderForName.toOrdering
   }
 
@@ -173,11 +174,11 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * Newtype for the canonical combining class associated with a Unicode code point or range of
    * code points.
    */
-  final private case class CanonicalCombiningClass(value: Int) extends AnyVal {
+  final private[build] case class CanonicalCombiningClass(value: Int) extends AnyVal {
     def isVirama: Boolean = value === 9
   }
 
-  private object CanonicalCombiningClass {
+  private[build] object CanonicalCombiningClass {
 
     def fromString(value: String): Either[String, CanonicalCombiningClass] =
       Either
@@ -203,7 +204,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[CanonicalCombiningClass] =
+    implicit def orderingInstance: Ordering[CanonicalCombiningClass] =
       hashAndOrderForCanonicalCombiningClass.toOrdering
   }
 
@@ -211,9 +212,9 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * Newtype for the bidirectional (bidi) category associated with a Unicode code point or range
    * of code points.
    */
-  final private case class BidirectionalCategory(value: String) extends AnyVal
+  final private[build] case class BidirectionalCategory(value: String) extends AnyVal
 
-  private object BidirectionalCategory {
+  private[build] object BidirectionalCategory {
     implicit val hashAndOrderForBidirectionalCategory
         : Hash[BidirectionalCategory] with Order[BidirectionalCategory] =
       new Hash[BidirectionalCategory] with Order[BidirectionalCategory] {
@@ -224,7 +225,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[BidirectionalCategory] =
+    implicit def orderingInstance: Ordering[BidirectionalCategory] =
       hashAndOrderForBidirectionalCategory.toOrdering
   }
 
@@ -232,18 +233,25 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * Newtype for the character decomposition mapping for a Unicode code point or range of code
    * points.
    */
-  final private class CharacterDecompositionMapping private (val value: String) extends AnyVal
+  final private[build] class CharacterDecompositionMapping private (val value: String)
+      extends AnyVal
 
-  private object CharacterDecompositionMapping {
+  private[build] object CharacterDecompositionMapping {
     private def apply(value: String): CharacterDecompositionMapping =
       new CharacterDecompositionMapping(value)
 
-    def fromString(value: String): Option[CharacterDecompositionMapping] =
+    def fromString(value: String): Either[String, CharacterDecompositionMapping] =
       if (value.nonEmpty) {
-        Some(CharacterDecompositionMapping(value))
+        Right(CharacterDecompositionMapping(value))
       } else {
-        None
+        Left("CharacterDecompositionMapping values must be non-empty Strings.")
       }
+
+    def unsafeFromString(value: String): CharacterDecompositionMapping =
+      fromString(value).fold(
+        e => throw new IllegalArgumentException(e),
+        identity
+      )
 
     implicit val hashAndOrderForCharacterDecompositionMapping
         : Hash[CharacterDecompositionMapping] with Order[CharacterDecompositionMapping] =
@@ -257,16 +265,16 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[CharacterDecompositionMapping] =
+    implicit def orderingInstance: Ordering[CharacterDecompositionMapping] =
       hashAndOrderForCharacterDecompositionMapping.toOrdering
   }
 
   /**
    * Newtype for the decimal digit value associated with a Unicode code point.
    */
-  final private class DecimalDigitValue private (val value: Int) extends AnyVal
+  final private[build] class DecimalDigitValue private (val value: Int) extends AnyVal
 
-  private object DecimalDigitValue {
+  private[build] object DecimalDigitValue {
     private def apply(value: Int): DecimalDigitValue =
       new DecimalDigitValue(value)
 
@@ -295,16 +303,16 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[DecimalDigitValue] =
+    implicit def orderingInstance: Ordering[DecimalDigitValue] =
       hashAndOrderForDecimalDigitValue.toOrdering
   }
 
   /**
    * Newtype for the digit value associated with a Unicode code point.
    */
-  final private class DigitValue private (val value: Int) extends AnyVal
+  final private[build] class DigitValue private (val value: Int) extends AnyVal
 
-  private object DigitValue {
+  private[build] object DigitValue {
     private def apply(value: Int): DigitValue =
       new DigitValue(value)
 
@@ -332,25 +340,31 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[DigitValue] =
+    implicit def orderingInstance: Ordering[DigitValue] =
       hashAndOrderForDigitValue.toOrdering
   }
 
   /**
    * Newtype for the numeric value for a Unicode code point.
    */
-  final private class NumericValue private (val value: String) extends AnyVal
+  final private[build] class NumericValue private (val value: String) extends AnyVal
 
-  private object NumericValue {
+  private[build] object NumericValue {
     private def apply(value: String): NumericValue =
       new NumericValue(value)
 
-    def fromString(value: String): Option[NumericValue] =
+    def fromString(value: String): Either[String, NumericValue] =
       if (value.nonEmpty) {
-        Some(NumericValue(value))
+        Right(NumericValue(value))
       } else {
-        None
+        Left("Numeric values may not be empty.")
       }
+
+    def unsafeFromString(value: String): NumericValue =
+      fromString(value).fold(
+        e => throw new IllegalArgumentException(e),
+        identity
+      )
 
     implicit val hashAndOrderForNumericValue: Hash[NumericValue] with Order[NumericValue] =
       new Hash[NumericValue] with Order[NumericValue] {
@@ -361,7 +375,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[NumericValue] =
+    implicit def orderingInstance: Ordering[NumericValue] =
       hashAndOrderForNumericValue.toOrdering
   }
 
@@ -369,9 +383,9 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * Newtype for whether or not the Unicode code point represents a character which is a
    * "mirrored" character in bidirectional text.
    */
-  final private case class Mirrored(val value: Boolean) extends AnyVal
+  final private[build] case class Mirrored(val value: Boolean) extends AnyVal
 
-  private object Mirrored {
+  private[build] object Mirrored {
     def unsafeFromString(value: String): Mirrored =
       if (value === "Y") {
         Mirrored(true)
@@ -390,7 +404,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[Mirrored] =
+    implicit def orderingInstance: Ordering[Mirrored] =
       hashAndOrderForMirrored.toOrdering
   }
 
@@ -399,18 +413,24 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * functions. This field is empty unless it is significantly different from the current name
    * for the character. No longer used in code chart production.
    */
-  final private class Unicode1Name private (val value: String) extends AnyVal
+  final private[build] class Unicode1Name private (val value: String) extends AnyVal
 
-  private object Unicode1Name {
+  private[build] object Unicode1Name {
     private def apply(value: String): Unicode1Name =
       new Unicode1Name(value)
 
-    def fromString(value: String): Option[Unicode1Name] =
+    def fromString(value: String): Either[String, Unicode1Name] =
       if (value.nonEmpty) {
-        Some(Unicode1Name(value))
+        Right(Unicode1Name(value))
       } else {
-        None
+        Left("Unicode1Name values may not be empty.")
       }
+
+    def unsafeFromString(value: String): Unicode1Name =
+      fromString(value).fold(
+        e => throw new IllegalArgumentException(e),
+        identity
+      )
 
     implicit val hashAndOrderForUnicode1Name: Hash[Unicode1Name] with Order[Unicode1Name] =
       new Hash[Unicode1Name] with Order[Unicode1Name] {
@@ -421,7 +441,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[Unicode1Name] =
+    implicit def orderingInstance: Ordering[Unicode1Name] =
       hashAndOrderForUnicode1Name.toOrdering
   }
 
@@ -430,18 +450,24 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * in the 10646 names list, or contained an asterisk to mark an Annex P note. As of Unicode
    * 5.2.0, this field no longer contains any non-null values.
    */
-  final private class ISO10646Comment private (val value: String) extends AnyVal
+  final private[build] class ISO10646Comment private (val value: String) extends AnyVal
 
-  private object ISO10646Comment {
+  private[build] object ISO10646Comment {
     private def apply(value: String): ISO10646Comment =
       new ISO10646Comment(value)
 
-    def fromString(value: String): Option[ISO10646Comment] =
+    def fromString(value: String): Either[String, ISO10646Comment] =
       if (value.nonEmpty) {
-        Some(ISO10646Comment(value))
+        Right(ISO10646Comment(value))
       } else {
-        None
+        Left("ISO10646Comment values may not be empty.")
       }
+
+    def unsafeFromString(value: String): ISO10646Comment =
+      fromString(value).fold(
+        e => throw new IllegalArgumentException(e),
+        identity
+      )
 
     implicit val hashAndOrderForISO10646Comment
         : Hash[ISO10646Comment] with Order[ISO10646Comment] =
@@ -453,7 +479,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[ISO10646Comment] =
+    implicit def orderingInstance: Ordering[ISO10646Comment] =
       hashAndOrderForISO10646Comment.toOrdering
   }
 
@@ -464,18 +490,24 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * where the full mappings may have multi-character results. For more information, see Case
    * and Case Mapping.
    */
-  final private class UppercaseMapping private (val value: String) extends AnyVal
+  final private[build] class UppercaseMapping private (val value: String) extends AnyVal
 
-  private object UppercaseMapping {
+  private[build] object UppercaseMapping {
     private def apply(value: String): UppercaseMapping =
       new UppercaseMapping(value)
 
-    def fromString(value: String): Option[UppercaseMapping] =
+    def fromString(value: String): Either[String, UppercaseMapping] =
       if (value.nonEmpty) {
-        Some(UppercaseMapping(value))
+        Right(UppercaseMapping(value))
       } else {
-        None
+        Left("UppercaseMapping values may not be empty.")
       }
+
+    def unsafeFromString(value: String): UppercaseMapping =
+      fromString(value).fold(
+        e => throw new IllegalArgumentException(e),
+        identity
+      )
 
     implicit val hashAndOrderForUppercaseMapping
         : Hash[UppercaseMapping] with Order[UppercaseMapping] =
@@ -487,25 +519,31 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[UppercaseMapping] =
+    implicit def orderingInstance: Ordering[UppercaseMapping] =
       hashAndOrderForUppercaseMapping.toOrdering
   }
 
   /**
    * Newtype for Simple lowercase mapping.
    */
-  final private class LowercaseMapping private (val value: String) extends AnyVal
+  final private[build] class LowercaseMapping private (val value: String) extends AnyVal
 
-  private object LowercaseMapping {
+  private[build] object LowercaseMapping {
     private def apply(value: String): LowercaseMapping =
       new LowercaseMapping(value)
 
-    def fromString(value: String): Option[LowercaseMapping] =
+    def fromString(value: String): Either[String, LowercaseMapping] =
       if (value.nonEmpty) {
-        Some(LowercaseMapping(value))
+        Right(LowercaseMapping(value))
       } else {
-        None
+        Left("LowercaseMapping values may not be empty.")
       }
+
+    def unsafeFromString(value: String): LowercaseMapping =
+      fromString(value).fold(
+        e => throw new IllegalArgumentException(e),
+        identity
+      )
 
     implicit val hashAndOrderForLowercaseMapping
         : Hash[LowercaseMapping] with Order[LowercaseMapping] =
@@ -517,7 +555,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[LowercaseMapping] =
+    implicit def orderingInstance: Ordering[LowercaseMapping] =
       hashAndOrderForLowercaseMapping.toOrdering
   }
 
@@ -526,18 +564,24 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * null, then the Simple_Titlecase_Mapping is the same as the Simple_Uppercase_Mapping for
    * this character.
    */
-  final private class TitlecaseMapping private (val value: String) extends AnyVal
+  final private[build] class TitlecaseMapping private (val value: String) extends AnyVal
 
-  private object TitlecaseMapping {
+  private[build] object TitlecaseMapping {
     private def apply(value: String): TitlecaseMapping =
       new TitlecaseMapping(value)
 
-    def fromString(value: String): Option[TitlecaseMapping] =
+    def fromString(value: String): Either[String, TitlecaseMapping] =
       if (value.nonEmpty) {
-        Some(TitlecaseMapping(value))
+        Right(TitlecaseMapping(value))
       } else {
-        None
+        Left("TitlecaseMapping values may not be empty.")
       }
+
+    def unsafeFromString(value: String): TitlecaseMapping =
+      fromString(value).fold(
+        e => throw new IllegalArgumentException(e),
+        identity
+      )
 
     implicit val hashAndOrderForTitlecaseMapping
         : Hash[TitlecaseMapping] with Order[TitlecaseMapping] =
@@ -549,7 +593,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           x.value.compare(y.value)
       }
 
-    implicit val orderingInstance: Ordering[TitlecaseMapping] =
+    implicit def orderingInstance: Ordering[TitlecaseMapping] =
       hashAndOrderForTitlecaseMapping.toOrdering
   }
 
@@ -557,7 +601,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * The information about a code point or range of code points as described in
    * `UnicodeData.txt`
    */
-  final private case class UnicodeCodePointInfomation(
+  final private[build] case class UnicodeCodePointInfomation(
       name: Name,
       generalCategory: GeneralCategory,
       canonicalCombiningClass: CanonicalCombiningClass,
@@ -574,7 +618,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
       titlecaseMapping: Option[TitlecaseMapping]
   )
 
-  private object UnicodeCodePointInfomation {
+  private[build] object UnicodeCodePointInfomation {
     implicit val hashAndOrderForUnicodeCodePointInfomation
         : Hash[UnicodeCodePointInfomation] with Order[UnicodeCodePointInfomation] = {
       val order: Order[UnicodeCodePointInfomation] = semiauto.order
@@ -596,13 +640,13 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
   /**
    * A representation of a single row from `UnicodeData.txt`.
    */
-  final private case class UnicodeDataRow(
+  final private[build] case class UnicodeDataRow(
       codeValue: CodePoint,
       rangeType: Option[RangeType],
       unicodeCodePointInformation: UnicodeCodePointInfomation
   )
 
-  private object UnicodeDataRow {
+  private[build] object UnicodeDataRow {
 
     /**
      * Regex for parsing a row from `UnicodeData.txt`.
@@ -666,16 +710,18 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
                   GeneralCategory(generalCategory),
                   CanonicalCombiningClass.unsafeFromString(canonicalCombiningClass),
                   BidirectionalCategory(bidirectionalCategory),
-                  CharacterDecompositionMapping.fromString(characterDecompositionMapping),
+                  CharacterDecompositionMapping
+                    .fromString(characterDecompositionMapping)
+                    .toOption,
                   DecimalDigitValue.unsafeFromString(decimalDigitValue),
                   DigitValue.unsafeFromString(digitValue),
-                  NumericValue.fromString(numericValue),
+                  NumericValue.fromString(numericValue).toOption,
                   Mirrored.unsafeFromString(mirrored),
-                  Unicode1Name.fromString(unicode1Name),
-                  ISO10646Comment.fromString(iso10646Comment),
-                  UppercaseMapping.fromString(uppercaseMapping),
-                  LowercaseMapping.fromString(lowercaseMapping),
-                  TitlecaseMapping.fromString(titlecaseMapping)
+                  Unicode1Name.fromString(unicode1Name).toOption,
+                  ISO10646Comment.fromString(iso10646Comment).toOption,
+                  UppercaseMapping.fromString(uppercaseMapping).toOption,
+                  LowercaseMapping.fromString(lowercaseMapping).toOption,
+                  TitlecaseMapping.fromString(titlecaseMapping).toOption
                 )
               )
           }
@@ -701,53 +747,91 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
   }
 
   /**
-   * A representation of the data from `UnicodeData.txt`, indexable by [[CodePointRange]].
+   * A representation of data about Unicode code point ranges. The primary feature of this type
+   * is the pinning of the keys to a [[CodePointRange]] and the forced grouping of contiguous
+   * ranges (e.g. a call to [[#group]]) on access to the underlying `SortedMap`.
    */
-  final private case class UnicodeData(
-      codePoints: SortedMap[CodePointRange, UnicodeCodePointInfomation]
-  ) {
+  // There are hints of a more general construct here that perhaps should be
+  // factored out at some point, but seems a bit niche and would probably be
+  // premature optimization.
+  final private[build] class UnicodeData[A](
+      private val codePoints: SortedMap[CodePointRange, A]
+  )(implicit A: Order[A]) {
+
+    lazy val asSortedMap: SortedMap[CodePointRange, A] =
+      group(codePoints)
+
+    def mapValues[B: Order](f: A => B): UnicodeData[B] =
+      UnicodeData(asSortedMap.mapValues(f))
+
+    def filter(pred: ((CodePointRange, A)) => Boolean): UnicodeData[A] =
+      UnicodeData(asSortedMap.filter(pred))
+
+    def updated(k: CodePointRange, v: A): UnicodeData[A] =
+      new UnicodeData[A](codePoints.updated(k, v))
+
+    def +(k: CodePointRange, v: A): UnicodeData[A] =
+      updated(k, v)
+
+    def +(kv: (CodePointRange, A)): UnicodeData[A] =
+      updated(kv._1, kv._2)
 
     /**
-     * The data partitioned into sets of [[UnicodeCodePointInfomation]] which pertain to a
-     * single code point and a range of code points. This partitioning is important for
-     * optimizing the generated code.
+     * The data partitioned into sets which pertain to a single code point and a range of code
+     * points. This partitioning is important for optimizing the generated code.
      */
-    lazy val partitioned: (
-        SortedMap[CodePointRange.Single, UnicodeCodePointInfomation],
-        SortedMap[CodePointRange, UnicodeCodePointInfomation]) =
-      codePoints.foldLeft(
-        (
-          SortedMap.empty[CodePointRange.Single, UnicodeCodePointInfomation],
-          SortedMap.empty[CodePointRange, UnicodeCodePointInfomation])) {
+    lazy val partitioned: (SortedMap[CodePointRange.Single, A], SortedMap[CodePointRange, A]) =
+      asSortedMap.foldLeft(
+        (SortedMap.empty[CodePointRange.Single, A], SortedMap.empty[CodePointRange, A])) {
         case ((singles, ranges), (k: CodePointRange.Single, v)) =>
           (singles + (k -> v), ranges)
         case ((singles, ranges), (k, v)) =>
           (singles, ranges + (k -> v))
       }
 
-    def singles: SortedMap[CodePointRange.Single, UnicodeCodePointInfomation] =
-      partitioned._1
+    /**
+     * As [[#partitioned]], but just returns the keys sets. Useful when we want to filter to a
+     * set of code points which have some property, then discard the property information.
+     */
+    lazy val partitionedKeySets: (SortedSet[CodePointRange.Single], SortedSet[CodePointRange]) =
+      partitioned match {
+        case (a, b) =>
+          (a.keySet, b.keySet)
+      }
 
-    def ranges: SortedMap[CodePointRange, UnicodeCodePointInfomation] =
-      partitioned._2
+    final override def toString: String =
+      s"UnicodeData(codePoints = ${codePoints})"
+
+    final override def equals(that: Any): Boolean =
+      that match {
+        case that: UnicodeData[_] =>
+          this.asSortedMap.equals(that.asSortedMap)
+        case _ =>
+          false
+      }
+
+    final override def hashCode: Int =
+      asSortedMap.hashCode
   }
 
-  private object UnicodeData {
-    val empty: UnicodeData = UnicodeData(SortedMap.empty)
+  private[build] object UnicodeData {
+    def apply[A: Order](value: SortedMap[CodePointRange, A]): UnicodeData[A] =
+      new UnicodeData[A](value)
 
-    implicit val hashAndOrderForUnicodeData: Hash[UnicodeData] with Order[UnicodeData] = {
-      val order: Order[UnicodeData] =
-        semiauto.order
-      new Hash[UnicodeData] with Order[UnicodeData] {
-        override def hash(x: UnicodeData): Int =
+    def empty[A: Order]: UnicodeData[A] = UnicodeData(SortedMap.empty[CodePointRange, A])
+
+    implicit def hashAndOrderForUnicodeData[A: Order]
+        : Hash[UnicodeData[A]] with Order[UnicodeData[A]] = {
+      new Hash[UnicodeData[A]] with Order[UnicodeData[A]] {
+        override def hash(x: UnicodeData[A]): Int =
           x.hashCode
 
-        override def compare(x: UnicodeData, y: UnicodeData): Int =
-          order.compare(x, y)
+        override def compare(x: UnicodeData[A], y: UnicodeData[A]): Int =
+          x.asSortedMap.compare(y.asSortedMap)
       }
     }
 
-    implicit val orderingInstance: Ordering[UnicodeData] =
+    implicit def orderingInstance[A: Order]: Ordering[UnicodeData[A]] =
       hashAndOrderForUnicodeData.toOrdering
   }
 
@@ -756,7 +840,8 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    *
    * The primary purpose of this function is to deal with the start/end range rows.
    */
-  private def rowsToUnicodeData(rows: Chain[UnicodeDataRow]): Either[String, UnicodeData] =
+  private def rowsToUnicodeData(
+      rows: Chain[UnicodeDataRow]): Either[String, UnicodeData[UnicodeCodePointInfomation]] =
     rows.foldMap(row =>
       row
         .rangeType
@@ -772,22 +857,19 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         rangesOfCodePoints
           .toList
           .map(_._2)
-          .foldM[F, UnicodeData](UnicodeData.empty) {
+          .foldM[F, UnicodeData[UnicodeCodePointInfomation]](
+            UnicodeData.empty[UnicodeCodePointInfomation]) {
             case (acc, values) =>
               values.toList match {
                 case a :: b :: Nil =>
-                  def from(
-                      startRow: UnicodeDataRow,
-                      endRow: UnicodeDataRow): Either[String, UnicodeData] =
+                  def from(startRow: UnicodeDataRow, endRow: UnicodeDataRow)
+                      : Either[String, UnicodeData[UnicodeCodePointInfomation]] =
                     if (startRow.unicodeCodePointInformation === endRow.unicodeCodePointInformation) {
                       CodePointRange
                         .from(startRow.codeValue, endRow.codeValue)
                         .flatMap(range =>
                           Right(
-                            acc.copy(
-                              codePoints =
-                                acc.codePoints + (range -> startRow.unicodeCodePointInformation)
-                            )
+                            acc + (range, startRow.unicodeCodePointInformation)
                           ))
                     } else {
                       Left(
@@ -811,8 +893,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           .map(value =>
             singleCodePoints.foldLeft(value) {
               case (acc, value) =>
-                acc.copy(codePoints = acc.codePoints + (CodePointRange(
-                  value.codeValue) -> value.unicodeCodePointInformation))
+                acc + (CodePointRange(value.codeValue) -> value.unicodeCodePointInformation)
             })
     }
 
@@ -820,51 +901,50 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * Extract the subset of Unicode code points which have the General_Category=Mark, e.g. a
    * combining mark.
    */
-  private def filterToGeneralCategoryMark(value: UnicodeData): UnicodeData =
-    UnicodeData(
-      value.codePoints.filter {
+  private def filterToGeneralCategoryMark(value: UnicodeData[UnicodeCodePointInfomation])
+      : (SortedSet[CodePointRange.Single], SortedSet[CodePointRange]) =
+    value
+      .mapValues(_.generalCategory)
+      .filter {
         case (_, v) =>
-          v.generalCategory.isCombiningMark
+          v.isCombiningMark
       }
-    )
+      .partitionedKeySets
 
   /**
    * Create the term representing the `BitSet` of all the Unicode code points which have a
    * general category of "Mark", e.g. a combining mark.
    */
-  private def combiningMarkExpression(unicodeData: UnicodeData): Term =
+  private def combiningMarkExpression(
+      unicodeData: UnicodeData[UnicodeCodePointInfomation]): Term =
     filterToGeneralCategoryMark(unicodeData) match {
-      case unicodeData =>
-        val ranges: SortedSet[CodePointRange] = unicodeData.ranges.keySet
-        val singles: SortedSet[CodePoint]     = unicodeData.singles.keySet.map(_.value)
+      case (singles, ranges) =>
         val rangeTerms: List[Term] =
           ranges
             .toList
             .map(range =>
               q"Range.inclusive(${Lit.Int(range.lower.value)}, ${Lit.Int(range.upper.value)})")
         val singlesTerm: Term =
-          q"BitSet(..${singles.toList.map(value => Lit.Int(value.value))})"
+          q"BitSet(..${singles.toList.map(value => Lit.Int(value.value.value))})"
         if (rangeTerms.isEmpty) {
           singlesTerm
         } else {
-          q"List(..$rangeTerms).foldLeft($singlesTerm)(_.fromScalaRange(_)).compact"
+          q"List(..$rangeTerms).foldLeft($singlesTerm){ case (acc, value) => BitSet.fromScalaRange(value) | acc}.compact"
         }
     }
 
   /**
    * Create the defs needed for the bidirectional information about Unicode code points.
    */
-  private def bidirectionalCategoryDefs(unicodeData: UnicodeData): List[Defn] = {
-    val grouped: SortedMap[CodePointRange, BidirectionalCategory] =
-      group(
-        mapValues(
-          unicodeData.codePoints,
-          (value: UnicodeCodePointInfomation) => value.bidirectionalCategory))
-    val (ranges, singles): (
-        SortedMap[CodePointRange, BidirectionalCategory],
-        SortedMap[CodePointRange, BidirectionalCategory]) = grouped.partition {
-      case (k, _) => k.size > 1
-    }
+  private def bidirectionalCategoryDefs(
+      unicodeData: UnicodeData[UnicodeCodePointInfomation]): List[Defn] = {
+    val categoryData: UnicodeData[BidirectionalCategory] =
+      unicodeData.mapValues(
+        _.bidirectionalCategory
+      )
+    val (singles, ranges): (
+        SortedMap[CodePointRange.Single, BidirectionalCategory],
+        SortedMap[CodePointRange, BidirectionalCategory]) = categoryData.partitioned
     val rangeTerms: List[Term] = ranges.toList.map {
       case (k, v) =>
         q"(Range.inclusive(${Lit.Int(k.lower.value)}, ${Lit.Int(k.upper.value)}), ${Lit.String(v.value)})"
@@ -894,30 +974,22 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * Extract out the Unicode code points which have a canonical combining class of Virama. This
    * is the only class we need to know about for UTS-46.
    */
-  private def filterToVirama(value: UnicodeData): SortedSet[CodePointRange] =
-    group(
-      mapValues(
-        value.codePoints,
-        (value: UnicodeCodePointInfomation) => value.canonicalCombiningClass))
-      .foldLeft(SortedSet.empty[CodePointRange]) {
-        case (acc, (k, v)) =>
-          if (v.isVirama) {
-            acc + k
-          } else {
-            acc
-          }
-      }
+  private def filterToVirama(value: UnicodeData[UnicodeCodePointInfomation])
+      : (SortedSet[CodePointRange.Single], SortedSet[CodePointRange]) =
+    value
+      .mapValues(
+        _.canonicalCombiningClass
+      )
+      .partitionedKeySets
 
   /**
    * Generate the defs needed to create the BitSets for tracking the Unicode code points which
    * have a canonical combining class of Virama.
    */
   private def viramaCanonicalCombiningClassCodePointsDefs(
-      unicodeData: UnicodeData): List[Defn] = {
-    val grouped: SortedSet[CodePointRange] =
+      unicodeData: UnicodeData[UnicodeCodePointInfomation]): List[Defn] = {
+    val (singles, ranges): (SortedSet[CodePointRange.Single], SortedSet[CodePointRange]) =
       filterToVirama(unicodeData)
-    val (ranges, singles): (SortedSet[CodePointRange], SortedSet[CodePointRange]) =
-      grouped.partition(_.size > 1)
 
     val rangeTerms: List[Term] = ranges.toList.map {
       case value =>
@@ -965,8 +1037,9 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    *
    * By grouping these values when we can, we make the size of the generated code smaller.
    */
-  private def group[A: Eq: Ordering: Order](
+  private def group[A: Eq: Order](
       value: SortedMap[CodePointRange, A]): SortedMap[CodePointRange, A] = {
+    implicit def ordering: Ordering[A] = Order[A].toOrdering
     invertMapping(value).foldLeft(SortedMap.empty[CodePointRange, A]) {
       // Remember we just inverted this.
       case (acc, (value, keys)) =>

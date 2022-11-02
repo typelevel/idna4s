@@ -67,7 +67,7 @@ ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
   name = "Scalafix codegen files",
   steps = List(
     WorkflowStep.Checkout,
-    WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check"))),
+    WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check", "test"))),
   scalas = List(Scala212)
 )
 
