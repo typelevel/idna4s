@@ -71,6 +71,14 @@ ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
   scalas = List(Scala212)
 )
 
+ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
+  id = "test-codegen",
+  name = "Tests for codegen",
+  steps =
+    List(WorkflowStep.Checkout, WorkflowStep.Sbt(commands = List("reload plugins", "test"))),
+  scalas = List(Scala212)
+)
+
 // Projects
 
 lazy val projectName: String = "idna4s"
