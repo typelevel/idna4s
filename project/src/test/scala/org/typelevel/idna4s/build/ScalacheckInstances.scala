@@ -272,4 +272,24 @@ object ScalacheckInstances {
     Cogen[Map[CodePointRange, A]].contramap(
       _.asSortedMap.toMap
     )
+
+  implicit val arbJoiningType: Arbitrary[DerivedJoiningTypeCodeGen.JoiningType] =
+    Arbitrary(
+      Gen.alphaChar.map(DerivedJoiningTypeCodeGen.JoiningType.unsafeFromChar)
+    )
+
+  implicit val cogenJoiningType: Cogen[DerivedJoiningTypeCodeGen.JoiningType] =
+    Cogen[Char].contramap(_.value)
+
+  implicit val arbDerivedJoiningTypeCodeGenRow: Arbitrary[DerivedJoiningTypeCodeGen.Row] =
+    Arbitrary(
+      for {
+        codePointRange <- Arbitrary.arbitrary[CodePointRange]
+        joiningType <- Arbitrary.arbitrary[DerivedJoiningTypeCodeGen.JoiningType]
+      } yield DerivedJoiningTypeCodeGen.Row(codePointRange, joiningType)
+    )
+
+  implicit val cogenDerivedJoiningTypeCodeGenRow: Cogen[DerivedJoiningTypeCodeGen.Row] =
+    Cogen[(CodePointRange, DerivedJoiningTypeCodeGen.JoiningType)].contramap(value =>
+      (value.codePointRange, value.joiningType))
 }

@@ -30,7 +30,8 @@ object CodeGen {
         NonEmptyList
           .of(
             UTS46CodeGen.generate(baseDir, unicodeVersion),
-            UnicodeDataCodeGen.generate(baseDir, unicodeVersion)
+            UnicodeDataCodeGen.generate(baseDir, unicodeVersion),
+            DerivedJoiningTypeCodeGen.generate(baseDir, unicodeVersion)
           )
           .reduceMap(
             _.fold(

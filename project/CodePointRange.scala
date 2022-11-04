@@ -101,4 +101,7 @@ private[build] object CodePointRange {
 
   implicit def orderingInstance: Ordering[CodePointRange] =
     hashAndOrderForCodePointRange.toOrdering
+
+  implicit val showForCodePointRange: Show[CodePointRange] =
+    Show.fromToString
 }
