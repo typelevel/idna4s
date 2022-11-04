@@ -63,11 +63,11 @@ ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 // SBT Typelevel Github Actions
 
 ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
-  id = "scalafix-codegen",
-  name = "Scalafix codegen files",
+  id = "codegen",
+  name = "Codegen Test/Lint",
   steps = List(
     WorkflowStep.Checkout,
-    WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check"))),
+    WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check", "test"))),
   scalas = List(Scala212)
 )
 
@@ -122,7 +122,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     Compile / sourceGenerators ++= List(
       (Compile / sourceManaged)
         .map(
-          UTS46CodeGen.generate(_, Some(UnicodeVersion))
+          CodeGen.generate(_, UnicodeVersion)
         )
         .taskValue
     )

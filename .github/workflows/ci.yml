@@ -259,8 +259,8 @@ jobs:
       - name: Publish
         run: sbt '++${{ matrix.scala }}' tlRelease
 
-  scalafix-codegen:
-    name: Scalafix codegen files
+  codegen:
+    name: Codegen Test/Lint
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -271,4 +271,4 @@ jobs:
       - name: Checkout current branch (fast)
         uses: actions/checkout@v2
 
-      - run: sbt '++${{ matrix.scala }}' 'reload plugins' 'scalafixAll --check'
+      - run: sbt '++${{ matrix.scala }}' 'reload plugins' 'scalafixAll --check' test

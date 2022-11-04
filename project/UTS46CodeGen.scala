@@ -9,7 +9,6 @@ import sbt._
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
-import scala.util.Try
 import scala.util.matching._
 import scala.collection.immutable.SortedSet
 import scala.collection.immutable.SortedMap
@@ -32,12 +31,13 @@ object UTS46CodeGen {
    * @param dir
    *   The base directory that the generated file will be in.
    */
-  def generate(dir: File, unicodeVersion: Option[String]): Seq[File] =
+  private[build] def generate(
+      dir: File,
+      unicodeVersion: UnicodeVersion): Either[Throwable, File] =
     Rows
-      .fromUnicodeURL(unicodeVersion.map(UnicodeVersion.apply))
-      .fold(
-        e => throw e,
-        rows => List(generateFromRows(rows, dir))
+      .fromUnicodeURL(unicodeVersion)
+      .map(
+        generateFromRows(_, dir)
       )
 
   /**
@@ -67,141 +67,9 @@ object UTS46CodeGen {
     Order[List[A]].toOrdering
 
   /**
-   * A type representing an inclusive Range of code points. This is similar to `Range`, but is
-   * used instead because `Range` has unusual equality and ordering properties and by assuming
-   * we have a non-empty, inclusive, range it was much easier to write an `Order` instance.
-   */
-  sealed abstract private class CodePointRange extends Serializable {
-    def lower: CodePoint
-    def upper: CodePoint
-
-    // final //
-
-    final def size: Int = upper.value - lower.value + 1
-
-    final override def toString: String = s"CodePointRange($lower, $upper)"
-  }
-
-  private object CodePointRange {
-    final private[this] case class CodePointRangeImpl(
-        override val lower: CodePoint,
-        override val upper: CodePoint)
-        extends CodePointRange
-
-    def apply(value: CodePoint): CodePointRange =
-      CodePointRangeImpl(value, value)
-
-    def from(lower: CodePoint, upper: CodePoint): Either[String, CodePointRange] =
-      if (lower <= upper) {
-        Right(CodePointRangeImpl(lower, upper))
-      } else {
-        Left(s"Invalid CodePointRange, lower must be <= upper: [$lower, $upper]")
-      }
-
-    def fromInt(value: Int): Either[String, CodePointRange] =
-      CodePoint.fromInt(value).map(apply)
-
-    def fromInts(lower: Int, upper: Int): Either[String, CodePointRange] =
-      for {
-        lower  <- CodePoint.fromInt(lower)
-        upper  <- CodePoint.fromInt(upper)
-        result <- from(lower, upper)
-      } yield result
-
-    def unsafeFromInts(lower: Int, upper: Int): CodePointRange =
-      fromInts(lower, upper).fold(
-        e => throw new IllegalArgumentException(e),
-        identity
-      )
-
-    def fromHexString(value: String): Either[String, CodePointRange] =
-      CodePoint.fromHexString(value).map(apply)
-
-    def fromHexStrings(lower: String, upper: String): Either[String, CodePointRange] =
-      for {
-        lower  <- CodePoint.fromHexString(lower)
-        upper  <- CodePoint.fromHexString(upper)
-        result <- from(lower, upper)
-      } yield result
-
-    implicit val orderAndHashForCodePointRange
-        : Order[CodePointRange] with Hash[CodePointRange] =
-      new Order[CodePointRange] with Hash[CodePointRange] {
-        override def hash(x: CodePointRange): Int = x.hashCode
-
-        override def compare(x: CodePointRange, y: CodePointRange): Int =
-          (x.lower, x.upper).compare((y.lower, y.upper))
-      }
-
-    implicit def orderingInstance: Ordering[CodePointRange] =
-      orderAndHashForCodePointRange.toOrdering
-  }
-
-  /**
-   * Newtype for a Unicode code point.
-   */
-  final private class CodePoint private (val value: Int) extends AnyVal {
-    final override def toString: String = s"CodePoint(value = ${value})"
-  }
-
-  private object CodePoint {
-    private def apply(value: Int): CodePoint =
-      new CodePoint(value)
-
-    def unsafeFromInt(value: Int): CodePoint =
-      fromInt(value).fold(
-        e => throw new IllegalArgumentException(e),
-        identity
-      )
-
-    def fromInt(value: Int): Either[String, CodePoint] =
-      if (value < 0 || value > Character.MAX_CODE_POINT) {
-        Left(s"Invalid code point: ${value}")
-      } else {
-        Right(apply(value))
-      }
-
-    def fromHexString(value: String): Either[String, CodePoint] = {
-      val trimmed: String = value.trim.toLowerCase
-      val integralValue: Either[Throwable, Int] =
-        if (trimmed.startsWith("0x")) {
-          Either.catchNonFatal(Integer.parseInt(trimmed.drop(2), 16))
-        } else {
-          Either.catchNonFatal(Integer.parseInt(trimmed, 16))
-        }
-      integralValue.leftMap(_.getLocalizedMessage).flatMap(fromInt)
-    }
-
-    implicit val orderInstance: Order[CodePoint] =
-      Order.by(_.value)
-
-    implicit def orderingInstance: Ordering[CodePoint] =
-      orderInstance.toOrdering
-  }
-
-  /**
-   * Newtype for a Unicode version string.
-   */
-  final private case class UnicodeVersion(value: String) extends AnyVal
-
-  private object UnicodeVersion {
-    implicit val hashAndOrderForUnicodeVersion
-        : Hash[UnicodeVersion] with Order[UnicodeVersion] =
-      new Hash[UnicodeVersion] with Order[UnicodeVersion] {
-        override def hash(x: UnicodeVersion): Int = x.hashCode
-
-        override def compare(x: UnicodeVersion, y: UnicodeVersion): Int =
-          x.value.compare(y.value)
-      }
-
-    implicit def orderingInstance: Ordering[UnicodeVersion] =
-      hashAndOrderForUnicodeVersion.toOrdering
-  }
-
-  /**
    * ADT for the IDNA 2008 status associated with some UTS-46 valid code points.
    */
-  sealed abstract private class IDNA2008Status extends Serializable {
+  sealed abstract private[build] class IDNA2008Status extends Serializable {
     import IDNA2008Status._
 
     final def asString: String =
@@ -211,7 +79,7 @@ object UTS46CodeGen {
       }
   }
 
-  private object IDNA2008Status {
+  private[build] object IDNA2008Status {
 
     /**
      * Valid under UTS-46, but excluded from all domain names under IDNA 2008 for all versions
@@ -829,7 +697,7 @@ import cats.data.NonEmptyList
 import cats.collections.BitSet
 
 private[uts46] abstract class GeneratedCodePointMapper0 extends CodePointMapperBase {
-  override final val unicodeVersion = ${Lit.String(version.value)}
+  override final val unicodeVersion = ${Lit.String(version.asString)}
   $mappedMultiMethod
   ..$mappedMethods
 }
@@ -894,8 +762,9 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
             Left("End of input reached without finding version string.")
           case x :: xs =>
             x match {
-              case unicodeVersionRegex(version) => Right((UnicodeVersion(version), xs))
-              case _                            => parseVersion(xs)
+              case unicodeVersionRegex(version) =>
+                UnicodeVersion.fromString(version).map((_, xs))
+              case _ => parseVersion(xs)
             }
         }
 
@@ -917,13 +786,14 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
     /**
      * Download the UTS-46 lookup table from the given URL and parse it into rows.
      */
-    def fromURL(url: String): Try[Rows] =
-      Try(new URL(url))
-        .flatMap(url => Try(IO.readLinesURL(url)))
+    def fromURL(url: String): Either[Throwable, Rows] =
+      Either
+        .catchNonFatal(new URL(url))
+        .flatMap(url => Either.catchNonFatal(IO.readLinesURL(url)))
         .flatMap(lines =>
           fromLines(lines).fold(
-            e => Failure(new RuntimeException(e)),
-            rows => Success(rows)
+            e => Left(new RuntimeException(e)),
+            rows => Right(rows)
           ))
 
     /**
@@ -934,25 +804,25 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
      *   "latest" will be used. This is the recommended usage as Unicode will post pre-release
      *   versions on their site that we probably don't want to implement a release against.
      */
-    def fromUnicodeURL(version: Option[UnicodeVersion]): Try[Rows] = {
+    def fromUnicodeURL(version: Option[UnicodeVersion]): Either[Throwable, Rows] = {
       def makeUrl(rawVersion: String): String =
         s"https://www.unicode.org/Public/idna/${rawVersion}/IdnaMappingTable.txt"
 
       val url: String =
         version.fold(
           makeUrl("latest")
-        )(version => makeUrl(version.value))
+        )(version => makeUrl(version.asString))
 
       fromURL(url).flatMap(rows =>
         // Validate that if an explicit version was specified, that is what we
         // parsed.
         version.fold(
-          Success(rows): Try[Rows]
+          Right(rows): Either[Throwable, Rows]
         )(version =>
           if (rows.version === version) {
-            Success(rows)
+            Right(rows)
           } else {
-            Failure(new RuntimeException(
+            left(new RuntimeException(
               s"Expected to get the mapping table for version ${version}, but got ${rows.version}."))
           }))
     }
@@ -961,7 +831,7 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
      * Generate the mapping table code by downloading the mappings from `www.unicode.org`. The
      * "latest" version of Unicode will be used, and parsed from the file.
      */
-    def fromUnicodeURL: Try[Rows] =
+    def fromUnicodeURL: Either[Throwable, Rows] =
       fromUnicodeURL(None)
 
     /**
@@ -970,7 +840,7 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
      * @param version
      *   The version of Unicode to use to generate the mapping table code.
      */
-    def fromUnicodeURL(version: UnicodeVersion): Try[Rows] =
+    def fromUnicodeURL(version: UnicodeVersion): Either[Throwable, Rows] =
       fromUnicodeURL(Some(version))
   }
 }
