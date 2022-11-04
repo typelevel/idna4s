@@ -980,6 +980,10 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
       .mapValues(
         _.canonicalCombiningClass
       )
+      .filter {
+        case (_, v) =>
+          v.isVirama
+      }
       .partitionedKeySets
 
   /**
