@@ -63,19 +63,11 @@ ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 // SBT Typelevel Github Actions
 
 ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
-  id = "scalafix-codegen",
-  name = "Scalafix codegen files",
+  id = "codegen",
+  name = "Codegen Test/Lint",
   steps = List(
     WorkflowStep.Checkout,
     WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check", "test"))),
-  scalas = List(Scala212)
-)
-
-ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
-  id = "test-codegen",
-  name = "Tests for codegen",
-  steps =
-    List(WorkflowStep.Checkout, WorkflowStep.Sbt(commands = List("reload plugins", "test"))),
   scalas = List(Scala212)
 )
 
