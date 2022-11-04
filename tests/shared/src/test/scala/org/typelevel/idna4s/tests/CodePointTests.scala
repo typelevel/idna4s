@@ -145,7 +145,7 @@ final class CodePointTests extends DisciplineSuite {
     loop(0)
   }
 
-  test("CodePoint.isHighSurrogate aggress with java.lang.Character") {
+  test("CodePoint.isHighSurrogate agrees with java.lang.Character") {
     @tailrec
     def loop(i: Int): Unit =
       if (i > Character.MAX_HIGH_SURROGATE) {
@@ -161,7 +161,7 @@ final class CodePointTests extends DisciplineSuite {
     loop(Character.MIN_HIGH_SURROGATE)
   }
 
-  test("CodePoint.isLowSurrogate aggress with java.lang.Character") {
+  test("CodePoint.isLowSurrogate agrees with java.lang.Character") {
     @tailrec
     def loop(i: Int): Unit =
       if (i > Character.MAX_LOW_SURROGATE) {
@@ -177,7 +177,7 @@ final class CodePointTests extends DisciplineSuite {
     loop(Character.MIN_LOW_SURROGATE)
   }
 
-  test("CodePoint.isSurrogate aggress with java.lang.Character") {
+  test("CodePoint.isSurrogate agrees with java.lang.Character") {
     @tailrec
     def loop(i: Int): Unit =
       if (i > Character.MAX_SURROGATE) {
