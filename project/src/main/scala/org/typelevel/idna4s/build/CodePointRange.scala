@@ -17,7 +17,9 @@
 package org.typelevel.idna4s.build
 
 import cats._
+import cats.data._
 import cats.syntax.all._
+import scala.collection.immutable.SortedMap
 
 /**
  * A type representing an inclusive Range of code points. This is similar to `Range`, but is
@@ -27,6 +29,65 @@ import cats.syntax.all._
 sealed abstract private[build] class CodePointRange extends Serializable {
   def lower: CodePoint
   def upper: CodePoint
+
+  /** Check to see if this code point range entirelly to the left of (closer to
+    * 0) the other range.
+    */
+  final def isLeftOf(that: CodePointRange): Boolean =
+    upper < that.lower
+
+  /** Check to see if this code point range entirelly to the right of (further
+    * from 0) the other range.
+    */
+  final def isRightOf(that: CodePointRange): Boolean =
+    that.upper < lower
+
+  /** Check to see if this code point range overlaps with the other code point
+    * range.
+    */
+  final def overlapsWith(that: CodePointRange): Boolean =
+    (isLeftOf(that) || isRightOf(that)) === false
+
+  /** Create the left difference between this range and the given range.
+    *
+    * This is a subset of the set difference, when considering code point
+    * ranges as sets of code points. The left/right notion here is used
+    * because the result is represented as a range the operation B - A may
+    * yield 0, 1, or 2 ranges. 0 for the empty set, 1 for a partial overlap
+    * where B extends to the left of A xor the right of A, and 2 where A is a
+    * strict non-empty subset of B.
+    */
+  final def leftDifference(that: CodePointRange): Option[CodePointRange] =
+    if (lower < that.lower) {
+      Some(CodePointRange.unsafeFromInts(lower.value, upper.value.min(that.lower.value - 1)))
+    } else {
+      None
+    }
+
+  /** Create the right difference between this range and the given range.
+    *
+    * This is a subset of the set difference, when considering code point
+    * ranges as sets of code points. The left/right notion here is used
+    * because the result is represented as a range the operation B - A may
+    * yield 0, 1, or 2 ranges. 0 for the empty set, 1 for a partial overlap
+    * where B extends to the left of A xor the right of A, and 2 where A is a
+    * strict non-empty subset of B.
+    */
+  final def rightDifference(that: CodePointRange): Option[CodePointRange] =
+    if (that.upper < upper) {
+      Some(CodePointRange.unsafeFromInts((that.upper.value + 1).max(lower.value), upper.value))
+    } else {
+      None
+    }
+
+  /** The set difference between this range an the given range.
+    *
+    * Because we are dealing with ranges, this yields two distinct values for
+    * the code points which are left of given range and the code points which
+    * are right of the given range, either or both of which may be empty.
+    */
+  final def difference(that: CodePointRange): (Option[CodePointRange], Option[CodePointRange]) =
+    (leftDifference(that), rightDifference(that))
 
   final def size: Int = upper.value - lower.value + 1
 
@@ -38,7 +99,19 @@ sealed abstract private[build] class CodePointRange extends Serializable {
     }
 }
 
+object Main {
+  def test: Unit = {
+    def a = CodePointRange.unsafeFromInts(0, 10)
+    def b = CodePointRange.unsafeFromInts(5, 10)
+    def c = List((a -> "haskell"), (b -> "curry"))
+    def d = CodePointRange.resolveMissingMapping(c)
+    c.foreach(println)
+    d.foreach(println)
+  }
+}
+
 private[build] object CodePointRange {
+
   final private[this] case class CodePointRangeImpl(
       override val lower: CodePoint,
       override val upper: CodePoint)
@@ -61,7 +134,67 @@ private[build] object CodePointRange {
 
     implicit def orderingInstance: Ordering[Single] =
       hashAndOrderForSingle.toOrdering
+
+    implicit def showInstance: Show[Single] =
+      Show[CodePointRange].narrow[Single]
   }
+
+  /** Given some `Foldable` of [[CodePointRange]] values mapped to other values
+    * of A, create a `SortedMap` where overlapping values defined later in the
+    * `Foldable` replace the overlapped sections defined earlier.
+    *
+    * For example,
+    * {{{
+    * def a = CodePointRange.unsafeFromInts(0, 10)
+    * def b = CodePointRange.unsafeFromInts(5, 10)
+    * def c = List((a -> "haskell"), (b -> "curry"))
+    * def d = CodePointRange.resolveMissingMapping(c)
+    *
+    * d.foreach(println)
+    *
+    * // yields
+    * // (CodePointRange(CodePoint(value = 0), CodePoint(value = 4)),haskell)
+    * // (CodePointRange(CodePoint(value = 5), CodePoint(value = 10)),curry)
+    * //
+    * // Where the mappings for code points 5 to 10 to "haskell" have been replaced by mappings to "curry".
+    * }}}
+    *
+    * This method is used for handling the Unicode 15.0 behavior of the @missing mapping values.
+    *
+    * @see [[https://www.unicode.org/reports/tr44/#Missing_Conventions]]
+    */
+  final def resolveMissingMapping[F[_]: Foldable, A](fa: F[(CodePointRange, A)]): SortedMap[CodePointRange, A] =
+    fa.foldLeft(SortedMap.empty[CodePointRange, A]){
+      case (acc, (range, a)) =>
+
+        // Check each current mapping to see if it overlaps with the new,
+        // higher priority, mapping.  This makes this O(n^2). A much more
+        // efficient solution is possible if we had an interval tree data
+        // type. Discussions are in progress about adding one to
+        // cats-collections, but in the mean time we will use this. This is
+        // acceptable because for the UCD (Unicode Charcter Database) files we
+        // are interested in the size of the missing mappings is around ~25-50
+        // and we only run this at compile time so it doesn't affect idna4s
+        // performance. That said, we should replace it with an interval tree
+        // base implementation when we can.
+        val value = acc.foldLeft(SortedMap.empty[CodePointRange, A]){
+          case (acc, (k, v)) if range.overlapsWith(k) =>
+            val (l, r): (Option[CodePointRange], Option[CodePointRange]) = k.difference(range)
+
+            (l.fold(acc)(value =>
+              acc + (value -> v)
+            )) match {
+              case acc =>
+                r.fold(acc)(value =>
+                  acc + (value -> v)
+                )
+            }
+          case (acc, (k, v)) =>
+            acc + (k -> v)
+        }
+
+        value + (range -> a)
+    }
 
   def apply(value: CodePoint): CodePointRange =
     Single(value)
@@ -111,8 +244,25 @@ private[build] object CodePointRange {
     new Order[CodePointRange] with Hash[CodePointRange] {
       override def hash(x: CodePointRange): Int = x.hashCode
 
+      // Note, this order is correct in terms of the Order laws, but not
+      // correct in terms of the formal definition of mathematical interval
+      // ordering. Intervals may only be given a partial ordering. When two
+      // intervals overlap, their ordering is undefined. This is okay, for
+      // now, because we want to use CodePointRange in SortedMap and
+      // SortedSet, so care must be taken to not insert overlapping intervals
+      // in most cases. What we really want is a map like structure based in
+      // interval trees, but sadly no such structure currently exists in
+      // Scala. See https://en.wikipedia.org/wiki/Interval_tree.
+      //
+      // Some future work might be to define such a structure in
+      // cats-collections.
       override def compare(x: CodePointRange, y: CodePointRange): Int =
-        (x.lower, x.upper).compare((y.lower, y.upper))
+        x.lower.compare(y.lower) match {
+          case 0 =>
+            x.upper.compare(y.upper)
+          case otherwise =>
+            otherwise
+        }
     }
 
   implicit def orderingInstance: Ordering[CodePointRange] =

@@ -21,4 +21,4 @@
 
 package org.typelevel.idna4s.core.uts46
 
-object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType {}
+object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with GeneratedBidirectionalClass {}
