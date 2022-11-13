@@ -6,6 +6,12 @@ ThisBuild / semanticdbVersion          := scalafixSemanticdb.revision
 
 scalacOptions -= "-Ywarn-unused-import"
 
+// Extracted from sbt-typelevel's configuration. We don't want all of
+// sbt-typelevel for the meta project build, but headers would be nice.
+licenses += "Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")
+organizationName := "Typelevel"
+startYear := Some(java.time.YearMonth.now().getYear())
+
 libraryDependencies ++= List(
   "org.scalameta"  % "semanticdb-scalac" % "4.6.0" cross CrossVersion.full,
   "org.scalameta" %% "scalameta"         % "4.6.0",
