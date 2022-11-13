@@ -20,6 +20,7 @@ import cats._
 import cats.data._
 import cats.syntax.all._
 import java.io.File
+import java.net.URI
 import java.net.URL
 import sbt._
 import scala.annotation.tailrec
@@ -804,7 +805,7 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
      */
     def fromURL(url: String): Either[Throwable, Rows] =
       Either
-        .catchNonFatal(new URL(url))
+        .catchNonFatal(URI.create(url).toURL())
         .flatMap(url => Either.catchNonFatal(IO.readLinesURL(url)))
         .flatMap(lines =>
           fromLines(lines).fold(

@@ -21,6 +21,7 @@ import cats.data._
 import cats.derived._
 import cats.syntax.all._
 import java.io.File
+import java.net.URI
 import java.net.URL
 import sbt._
 import scala.annotation.tailrec
@@ -102,8 +103,10 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
       unicodeVersion: UnicodeVersion): Either[Throwable, Chain[UnicodeDataRow]] =
     Either
       .catchNonFatal(
-        new URL(
-          s"https://www.unicode.org/Public/${unicodeVersion.asString}/ucd/UnicodeData.txt"))
+        URI
+          .create(
+            s"https://www.unicode.org/Public/${unicodeVersion.asString}/ucd/UnicodeData.txt")
+          .toURL())
       .flatMap(
         rowsFromUrl
       )
