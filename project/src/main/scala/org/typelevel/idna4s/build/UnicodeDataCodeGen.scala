@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Typelevel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.typelevel.idna4s.build
 
 import cats._
@@ -25,8 +41,8 @@ import scala.util.matching._
  */
 object UnicodeDataCodeGen {
 
-  final private val BaseName                  = "UnicodeData"
-  final private val BaseTypeName: String      = s"${BaseName}Base"
+  final private val BaseName = "UnicodeData"
+  final private val BaseTypeName: String = s"${BaseName}Base"
   final private val GeneratedTypeName: String = s"Generated${BaseName}"
 
   /**
@@ -100,7 +116,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
 
   private[build] object RangeType {
     case object Start extends RangeType
-    case object End   extends RangeType
+    case object End extends RangeType
 
     implicit val hashAndOrderForRangeType: Hash[RangeType] with Order[RangeType] =
       new Hash[RangeType] with Order[RangeType] {
