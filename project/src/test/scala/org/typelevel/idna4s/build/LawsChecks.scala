@@ -72,4 +72,16 @@ final class LawChecks extends DisciplineSuite {
 
   checkAll("Order[UnicodeData[Int]]", OrderTests[UnicodeData[Int]].order)
   checkAll("Hash[UnicodeData[Int]]", HashTests[UnicodeData[Int]].hash)
+
+  checkAll(
+    "Order[DerivedJoiningTypeCodeGen.JoiningType]",
+    OrderTests[DerivedJoiningTypeCodeGen.JoiningType].order)
+  checkAll(
+    "Hash[DerivedJoiningTypeCodeGen.JoiningType]",
+    HashTests[DerivedJoiningTypeCodeGen.JoiningType].hash)
+
+  checkAll(
+    "Order[DerivedJoiningTypeCodeGen.Row]",
+    OrderTests[DerivedJoiningTypeCodeGen.Row].order)
+  checkAll("Hash[DerivedJoiningTypeCodeGen.Row]", HashTests[DerivedJoiningTypeCodeGen.Row].hash)
 }
