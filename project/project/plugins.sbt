@@ -1,4 +1,5 @@
 import org.typelevel.idna4s.build.Versions
 
-addSbtPlugin("org.typelevel" % "sbt-typelevel-scalafix" % Versions.SbtTypelevelVersion)
-addSbtPlugin("org.typelevel" % "sbt-typelevel-settings" % Versions.SbtTypelevelVersion)
+addSbtPlugin("de.heikoseeberger" % "sbt-header"             % "5.6.0")
+addSbtPlugin("org.typelevel"     % "sbt-typelevel-scalafix" % Versions.SbtTypelevelVersion)
+addSbtPlugin("org.typelevel"     % "sbt-typelevel-settings" % Versions.SbtTypelevelVersion)

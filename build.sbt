@@ -6,7 +6,7 @@ val UnicodeVersion: String = "15.0.0"
 
 val Scala212                    = "2.12.17"
 val Scala213                    = "2.13.10"
-val Scala3                      = "3.2.0"
+val Scala3                      = "3.2.1"
 def DefaultScalaVersion: String = Scala213
 
 val catsCollectionsV = "0.9.5"
@@ -22,6 +22,16 @@ ThisBuild / scalaVersion       := Scala213
 ThisBuild / developers += tlGitHubDev("isomarcte", "David Strawn")
 ThisBuild / licenses  := List(License.MIT)
 ThisBuild / startYear := Some(2022)
+
+// SBT Commands
+
+// Calls prePR, but also the additional commands needed to run on the meta
+// project defined in the project/ directory.
+//
+// Also adds scalafixAll, as that is not in prePR.
+addCommandAlias(
+  "prePRAll",
+  s";+scalafixAll;+prePR;reload plugins;clean;scalafixAll;headerCreateAll;")
 
 // Utility
 
@@ -67,7 +77,8 @@ ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
   name = "Codegen Test/Lint",
   steps = List(
     WorkflowStep.Checkout,
-    WorkflowStep.Sbt(commands = List("reload plugins", "scalafixAll --check", "test"))),
+    WorkflowStep.Sbt(commands =
+      List("reload plugins", "headerCheckAll", "scalafixAll --check", "test"))),
   scalas = List(Scala212)
 )
 
