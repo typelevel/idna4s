@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Typelevel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.typelevel.idna4s.build
 
 import cats._
@@ -70,8 +86,8 @@ private[build] object CodePointRange {
 
   def fromInts(lower: Int, upper: Int): Either[String, CodePointRange] =
     for {
-      lower  <- CodePoint.fromInt(lower)
-      upper  <- CodePoint.fromInt(upper)
+      lower <- CodePoint.fromInt(lower)
+      upper <- CodePoint.fromInt(upper)
       result <- from(lower, upper)
     } yield result
 
@@ -86,8 +102,8 @@ private[build] object CodePointRange {
 
   def fromHexStrings(lower: String, upper: String): Either[String, CodePointRange] =
     for {
-      lower  <- CodePoint.fromHexString(lower)
-      upper  <- CodePoint.fromHexString(upper)
+      lower <- CodePoint.fromHexString(lower)
+      upper <- CodePoint.fromHexString(upper)
       result <- from(lower, upper)
     } yield result
 

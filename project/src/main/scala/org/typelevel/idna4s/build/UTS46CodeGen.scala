@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Typelevel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.typelevel.idna4s.build
 
 import cats._
@@ -113,7 +129,7 @@ object UTS46CodeGen {
       value.trim match {
         case "NV8" => Right(NV8)
         case "XV8" => Right(XV8)
-        case _     => Left(s"Unknown IDNA 2008 status string: ${value}")
+        case _ => Left(s"Unknown IDNA 2008 status string: ${value}")
       }
   }
 
@@ -350,21 +366,21 @@ object UTS46CodeGen {
       value.split("""[;#]""").toList match {
         case input :: status :: _ :: Nil =>
           for {
-            input  <- parseInputCodePoints(input)
+            input <- parseInputCodePoints(input)
             status <- CodePointStatus.from(status, MappingValue.empty, None)
           } yield Row(input, status)
         case input :: status :: mapping :: _ :: Nil =>
           for {
-            input   <- parseInputCodePoints(input)
+            input <- parseInputCodePoints(input)
             mapping <- MappingValue.fromString(mapping)
-            status  <- CodePointStatus.from(status, mapping, None)
+            status <- CodePointStatus.from(status, mapping, None)
           } yield Row(input, status)
         case input :: status :: mapping :: idna2008Status :: _ :: Nil if mapping.trim.isEmpty =>
           for {
-            input          <- parseInputCodePoints(input)
-            mapping        <- MappingValue.fromString(mapping)
+            input <- parseInputCodePoints(input)
+            mapping <- MappingValue.fromString(mapping)
             idna2008Status <- IDNA2008Status.fromString(idna2008Status)
-            status         <- CodePointStatus.from(status, mapping, Some(idna2008Status))
+            status <- CodePointStatus.from(status, mapping, Some(idna2008Status))
           } yield Row(input, status)
         case _ =>
           Left(s"Unable to parse row: ${value}")
@@ -771,7 +787,7 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
       type F[A] = Either[String, A]
 
       parseVersion(lines) match {
-        case Left(error)            => Left(error)
+        case Left(error) => Left(error)
         case Right((version, rest)) =>
           // Drop comments after parsing the version
           rest.dropWhile(_.startsWith("#")).foldM[F, Rows](Rows.empty(version)) {
