@@ -57,7 +57,7 @@ private[uts46] trait JoiningTypeBase {
    *   already validated that the int32 values in scope are valid code points.
    */
   final protected def joiningTypeForCodePoint(codePoint: Int): Char =
-    joiningTypeMap.get(codePoint).getOrElse(NonJoining)
+    joiningTypeMap.getOrElse(codePoint, NonJoining)
 
   // UTS-46 only cares about a specific set of Joining Types. The code
   // technically handles any joining type because it is a relatively small set
