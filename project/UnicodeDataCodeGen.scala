@@ -20,8 +20,8 @@ import scala.util.matching._
  * Code generation utilities for code which is derived from `UnicodeData.txt`.
  *
  * It is intended that the `generate` method will be invoked from `CodeGen`. This is important
- * because we need have to generate code from several different sources and we need to ensure
- * that the UnicodeVersion used is always the same.
+ * because we generate code from several different sources and we need to ensure that the
+ * UnicodeVersion used is always the same.
  */
 object UnicodeDataCodeGen {
 
