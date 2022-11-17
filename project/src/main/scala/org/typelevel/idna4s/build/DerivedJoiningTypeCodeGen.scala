@@ -16,15 +16,16 @@
 
 package org.typelevel.idna4s.build
 
-import sbt.{Show => _, _}
 import cats._
 import cats.data._
 import cats.syntax.all._
+import java.net.URI
+import java.net.URL
+import sbt.{Show => _, _}
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
-import scala.util.matching.Regex
-import java.net.URL
 import scala.meta._
+import scala.util.matching.Regex
 
 /**
  * Code generation utilities for code which is derived from `DerivedJoiningType.txt`.
@@ -92,8 +93,10 @@ private[build] object DerivedJoiningTypeCodeGen {
       unicodeVersion: UnicodeVersion): Either[Throwable, SortedSet[Row]] =
     Either
       .catchNonFatal(
-        new URL(
-          s"https://www.unicode.org/Public/${unicodeVersion.asString}/ucd/extracted/DerivedJoiningType.txt")
+        URI
+          .create(
+            s"https://www.unicode.org/Public/${unicodeVersion.asString}/ucd/extracted/DerivedJoiningType.txt")
+          .toURL()
       )
       .flatMap(url => rowsFromUrl(url))
 
