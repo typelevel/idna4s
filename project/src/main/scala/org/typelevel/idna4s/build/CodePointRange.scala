@@ -171,12 +171,7 @@ private[build] object CodePointRange {
         // higher priority, mapping.  This makes this O(n^2). A much more
         // efficient solution is possible if we had an interval tree data
         // type. Discussions are in progress about adding one to
-        // cats-collections, but in the mean time we will use this. This is
-        // acceptable because for the UCD (Unicode Charcter Database) files we
-        // are interested in the size of the missing mappings is around ~25-50
-        // and we only run this at compile time so it doesn't affect idna4s
-        // performance. That said, we should replace it with an interval tree
-        // base implementation when we can.
+        // cats-collections, but in the mean time we will use this.
         val value = acc.foldLeft(SortedMap.empty[CodePointRange, A]){
           case (acc, (k, v)) if range.overlapsWith(k) =>
             val (l, r): (Option[CodePointRange], Option[CodePointRange]) = k.difference(range)
