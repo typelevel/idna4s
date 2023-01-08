@@ -74,7 +74,7 @@ package object build {
    *
    * By grouping these values when we can, we make the size of the generated code smaller.
    */
-  private[build] def group[A: Eq: Order](
+  private[build] def group[A: Order](
       value: SortedMap[CodePointRange, A]): SortedMap[CodePointRange, A] = {
     implicit def ordering: Ordering[A] = Order[A].toOrdering
     invertMapping(value).foldLeft(SortedMap.empty[CodePointRange, A]) {
