@@ -367,7 +367,7 @@ private[build] object DerivedBidiClassCodeGen {
    */
   def bidiClassMappingDef(value: SortedMap[CodePointRange, BidiAlias])
       : Either[NonEmptyChain[String], List[Defn]] = {
-    value.toVector.foldMap {
+    group(value).toVector.foldMap {
       case (single: CodePointRange.Single, value) =>
         (
           SortedMap(single -> NonEmptyChain.one(value)),
