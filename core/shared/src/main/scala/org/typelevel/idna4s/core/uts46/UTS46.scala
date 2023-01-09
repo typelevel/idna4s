@@ -184,6 +184,10 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
     // need to check step 6, that is taken care of by the mapping step in
     // toASCII and toUnicode.
 
+    /* Check for validity criteria 2, HYPHEN_MINUS can not occur both positions 3
+     * and 4. This should be called at most once when processing position 4 of
+     * the input.
+     */
     def checkHyphen34(errors: Chain[UTS46Exception], previousCodePoint: Option[Int], cp: Int): Chain[UTS46Exception] =
       if (cp === HYPHEN_MINUS_INT && previousCodePoint === Some(HYPHEN_MINUS_INT)) {
         errors :+ UTS46Exception.HyphenMinusInThirdAndFourthPositionException
@@ -452,7 +456,9 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
 
   private def process(checkHyphens: Boolean, checkBidi: Boolean, checkJoiners: Boolean, useStd3ASCIIRules: Boolean, transitionalProcessing: Boolean, value: String): Ior[NonEmptyChain[IDNAException], NonEmptyChain[String]] = {
 
-    val shouldCheckBidi: Boolean =
+    // The bidirectional rules apply if checkBidi is true _and_ the intput is
+    // a bidi domain name.
+    def shouldCheckBidi: Boolean =
       checkBidi && isBidiDomainName(value)
 
     def processLabel(label: String): Ior[NonEmptyChain[IDNAException], String] = {
@@ -541,15 +547,15 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
 
   private final val HYPHEN_MINUS = '\u002d'
 
-  private final val HYPHEN_MINUS_INT = '\u002d'.toInt
+  private final val HYPHEN_MINUS_INT = HYPHEN_MINUS.toInt
 
   private final val ZERO_WIDTH_NON_JOINER = '\u200c'
 
-  private final val ZERO_WIDTH_NON_JOINER_INT = '\u200c'.toInt
+  private final val ZERO_WIDTH_NON_JOINER_INT = ZERO_WIDTH_NON_JOINER.toInt
 
   private final val ZERO_WIDTH_JOINER = '\u200d'
 
-  private final val ZERO_WIDTH_JOINER_INT = '\u200d'.toInt
+  private final val ZERO_WIDTH_JOINER_INT = ZERO_WIDTH_NON_JOINER_INT.toInt
 
   private final case class BidiNumberTypeError(value: Boolean) extends AnyVal
 
@@ -636,7 +642,7 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
 
     private[UTS46] case object ContextJViolationForJoinerException extends UTS46Exception {
       override val getMessage: String =
-        "ContextJ violation found for zero width joiner code point 0x200d. If present in a label, it must follow a code point which has a canonical combining class of Virama."
+        "ContextJ violation found for zero width joiner code point 0x200d. If present in a label, it must follow a code point which has a canonical combining class of Virama, but did not."
 
       override def toString: String =
         s"ContextJViolationForNonJoinerException(getLocalizedMessage = ${getLocalizedMessage})"
@@ -714,7 +720,7 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
     }
 
     private[UTS46] case object EmptyRootLabelException extends UTS46Exception {
-      override val getMessage: String = "The domain ends with the empty root label. While this is a a valid domain, UTS-46 forbids this notation."
+      override val getMessage: String = "The domain ends with the empty root label. While this is a valid domain, UTS-46 forbids this notation."
 
       override def toString: String =
         s"EmptyRootLabelException(getLocalizedMessage = ${getLocalizedMessage})"
