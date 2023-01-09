@@ -194,4 +194,21 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
         .shrink(value.codePoint)
         .filterNot(_.isSurrogate)
         .map(Delimiter.unsafeFromCodePoint))
+
+  implicit final def arbUTS46Config: Arbitrary[UTS46Config] =
+    Arbitrary(
+      for {
+        checkHyphens <- Arbitrary.arbitrary[Boolean]
+        checkBidi <- Arbitrary.arbitrary[Boolean]
+        checkJoiners <- Arbitrary.arbitrary[Boolean]
+        useStd3ASCIIRules <- Arbitrary.arbitrary[Boolean]
+        transitionalProcessing <- Arbitrary.arbitrary[Boolean]
+        verifyDnsLength <- Arbitrary.arbitrary[Boolean]
+      } yield UTS46Config(checkHyphens, checkBidi, checkJoiners, useStd3ASCIIRules, transitionalProcessing, verifyDnsLength)
+    )
+
+  implicit final def cogenUTS46Config: Cogen[UTS46Config] =
+    Cogen[(Boolean, Boolean, Boolean, Boolean, Boolean, Boolean)].contramap(value =>
+      (value.checkHyphens, value.checkBidi, value.checkJoiners, value.useStd3ASCIIRules, value.transitionalProcessing, value.verifyDnsLength)
+    )
 }

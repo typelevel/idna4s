@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Typelevel
+ * Copyright 2023 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,8 @@ object CodeGen {
           .of(
             UTS46CodeGen.generate(baseDir, unicodeVersion),
             UnicodeDataCodeGen.generate(baseDir, unicodeVersion),
-            DerivedJoiningTypeCodeGen.generate(baseDir, unicodeVersion)
+            DerivedJoiningTypeCodeGen.generate(baseDir, unicodeVersion),
+            DerivedBidiClassCodeGen.generate(baseDir, unicodeVersion)
           )
           .reduceMap(
             _.fold(

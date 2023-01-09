@@ -402,6 +402,12 @@ object Bootstring {
     }
   }
 
+  def encodePunycodeRaw(value: String): Either[BootstringException, String] =
+    encodeRaw(BootstringParams.PunycodeParams)(value)
+
+  def decodePunycodeRaw(value: String): Either[BootstringException, String] =
+    decodeRaw(BootstringParams.PunycodeParams)(value)
+
   /**
    * An error which occurred during the application of the Bootstring algorithm.
    */
@@ -411,15 +417,6 @@ object Bootstring {
   // sub-members. We want to hide that for bincomat.
 
   object BootstringException {
-
-    private def codePointDescription(value: Int): String =
-      CodePoint
-        .fromInt(value)
-        .fold(
-          // The first case should be impossible.
-          _ => s"Value is outside the domain of valid code points: ${value}",
-          _.toString
-        )
 
     private[Bootstring] case object UnableToResizeBufferException extends BootstringException {
       override val getMessage: String =
@@ -435,11 +432,11 @@ object Bootstring {
         extends BootstringException {
 
       final override def getMessage: String =
-        s"Input contains a non-basic code point < the initial N value. Code Point: ${codePointDescription(
+        s"Input contains a non-basic code point < the initial N value. Code Point: ${CodePoint.descriptionFromInt(
             invalidCodePoint)}, Initial N: ${initialN}."
 
       final override def toString: String =
-        s"InvalidNonBasicCodePointException(invalidCodePoint = ${codePointDescription(
+        s"InvalidNonBasicCodePointException(invalidCodePoint = ${CodePoint.descriptionFromInt(
             invalidCodePoint)}, initialN = ${initialN}, getMessage = ${getMessage})"
     }
 
@@ -459,13 +456,13 @@ object Bootstring {
     final private[Bootstring] case class BasicCodePointInNonBasicSection(codePoint: Int)
         extends BootstringException {
       final override def getMessage: String =
-        s"Decoded a basic code point in the non-basic section of the input. All basic code points must occur in the basic section. Code point: ${codePointDescription(codePoint)}"
+        s"Decoded a basic code point in the non-basic section of the input. All basic code points must occur in the basic section. Code point: ${CodePoint.descriptionFromInt(codePoint)}"
     }
 
     final private[Bootstring] case class NonBasicCodePointInBasicSection(codePoint: Int)
         extends BootstringException {
       final override def getMessage: String =
-        s"Decoded a non-basic code point in the basic section of the input. All non-basic code points must occurr in the non-basic section. Code point: ${codePointDescription(codePoint)}"
+        s"Decoded a non-basic code point in the basic section of the input. All non-basic code points must occurr in the non-basic section. Code point: ${CodePoint.descriptionFromInt(codePoint)}"
     }
 
     final private[Bootstring] case class WrappedException(

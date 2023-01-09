@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Typelevel
+ * Copyright 2023 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,6 @@ object UnicodeDataCodeGen {
 package org.typelevel.idna4s.core.uts46
 
 import cats.collections.BitSet
-import scala.collection.immutable.IntMap
 
 private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         Type.Name(BaseTypeName),
@@ -83,7 +82,6 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         Nil)} {
   override final protected lazy val combiningMarkCodePoints: BitSet = $combiningMarkCodePointsRHS
 
-  ..${bidirectionalCategoryDefs(unicodeData)}
   ..${viramaCanonicalCombiningClassCodePointsDefs(unicodeData)}
 }"""
   }
@@ -952,43 +950,6 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
     }
 
   /**
-   * Create the defs needed for the bidirectional information about Unicode code points.
-   */
-  private def bidirectionalCategoryDefs(
-      unicodeData: UnicodeData[UnicodeCodePointInfomation]): List[Defn] = {
-    val categoryData: UnicodeData[BidirectionalCategory] =
-      unicodeData.mapValues(
-        _.bidirectionalCategory
-      )
-    val (singles, ranges): (
-        SortedMap[CodePointRange.Single, BidirectionalCategory],
-        SortedMap[CodePointRange, BidirectionalCategory]) = categoryData.partitioned
-    val rangeTerms: List[Term] = ranges.toList.map {
-      case (k, v) =>
-        q"(Range.inclusive(${Lit.Int(k.lower.value)}, ${Lit.Int(k.upper.value)}), ${Lit.String(v.value)})"
-    }
-    val singleTerms: List[Term] =
-      singles.toList.map {
-        case (k, v) =>
-          q"(${Lit.Int(k.lower.value)}, ${Lit.String(v.value)})"
-      }
-    val baseMap: Term =
-      q"IntMap(..$singleTerms)"
-
-    List(
-      q"""private final def bidirectionalCategoryBaseMap: IntMap[String] = $baseMap""",
-      q"""override final protected lazy val bidirectionalCategoryMap: IntMap[String] =
-             List[(Range, String)](..$rangeTerms).foldLeft(bidirectionalCategoryBaseMap){
-              case (k, (range, result)) =>
-                range.foldLeft(k){
-                  case (k, cp) =>
-                    k.updated(cp, result)
-                }
-          }"""
-    )
-  }
-
-  /**
    * Extract out the Unicode code points which have a canonical combining class of Virama. This
    * is the only class we need to know about for UTS-46.
    */
@@ -1038,52 +999,6 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
   }
 
   // Utility functions for working with Maps
-
-  /**
-   * For a given `SortedMap`, invert the mapping.
-   */
-  private def invertMapping[A: Order, B: Ordering: Order](
-      value: SortedMap[A, B]): SortedMap[B, NonEmptySet[A]] =
-    value.toList.foldMap {
-      case (k, v) =>
-        SortedMap(v -> NonEmptySet.one(k))
-    }
-
-  /**
-   * For a map of code point range values to some type `A`, collapse ranges of code points which
-   * map to the same `A` into a single code point range. This becomes useful when we are
-   * interested in a certain sub-property of a code point, for example the "General_Category".
-   * When initially parsing the data from `UnicodeData.txt`, these code points might have been
-   * in separate rows because they didn't share all of the code point properties, but after
-   * projecting to a specific sub-property they may be collapsable into a single range.
-   *
-   * By grouping these values when we can, we make the size of the generated code smaller.
-   */
-  private def group[A: Eq: Order](
-      value: SortedMap[CodePointRange, A]): SortedMap[CodePointRange, A] = {
-    implicit def ordering: Ordering[A] = Order[A].toOrdering
-    invertMapping(value).foldLeft(SortedMap.empty[CodePointRange, A]) {
-      // Remember we just inverted this.
-      case (acc, (value, keys)) =>
-        keys
-          .foldLeft((acc, Option.empty[CodePointRange])) {
-            case ((acc, previous), key) =>
-              previous.fold(
-                (acc + (key -> value), Some(key))
-              )(previous =>
-                if (previous.upper.value < Character.MAX_CODE_POINT && (previous
-                    .upper
-                    .value + 1) === key.lower.value) {
-                  val newRange: CodePointRange =
-                    CodePointRange.unsafeFrom(previous.lower, key.upper)
-                  ((acc - previous) + (newRange -> value), Some(newRange))
-                } else {
-                  (acc + (key -> value), Some(key))
-                })
-          }
-          ._1
-    }
-  }
 
   /**
    * Missing in 2.12.x, deprecated in 2.13.x, so reproduced here.
