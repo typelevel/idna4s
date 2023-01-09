@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Typelevel
+ * Copyright 2023 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,10 @@ object ScalacheckInstances {
   implicit val cogenCodePoint: Cogen[CodePoint] =
     Cogen[Int].contramap(_.value)
 
+  implicit val shrinkCodePoint: Shrink[CodePoint] =
+    Shrink((codePoint: CodePoint) =>
+      Shrink.shrink[Int](codePoint.value).flatMap(int => CodePoint.fromInt(int).toOption))
+
   implicit val arbIDNA2008Status: Arbitrary[IDNA2008Status] =
     Arbitrary(
       Gen.oneOf(IDNA2008Status.NV8, IDNA2008Status.XV8)
@@ -75,6 +79,12 @@ object ScalacheckInstances {
 
   implicit val cogenCodePointRange: Cogen[CodePointRange] =
     Cogen[(CodePoint, CodePoint)].contramap(value => (value.lower, value.upper))
+
+  implicit val shrinkCodePointRange: Shrink[CodePointRange] =
+    Shrink((value: CodePointRange) =>
+      Shrink
+        .shrink[(Int, Int)](value.lower.value -> value.upper.value)
+        .flatMap(pair => CodePointRange.fromInts(pair._1, pair._2).toOption))
 
   implicit val arbRangeType: Arbitrary[RangeType] =
     Arbitrary(

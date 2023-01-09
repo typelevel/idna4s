@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Typelevel
+ * Copyright 2023 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ private[build] object DerivedJoiningTypeCodeGen {
    */
   def joiningTypeMap[F[_]: Foldable](
       rows: F[Row]): Either[String, SortedMap[CodePointRange, JoiningType]] =
-    flattenValues(
+    flattenValuesOrError(
       rows.foldMap {
         case Row(codePointRange, joiningType) =>
           SortedMap(codePointRange -> NonEmptyChain.one(joiningType))
@@ -287,26 +287,4 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
     implicit def orderingInstance: Ordering[Row] =
       hashAndOrderForRow.toOrdering
   }
-
-  /**
-   * Utility method to flatten a map of A -> F[B], where F is some non-empty type such as
-   * `NonEmptyChain` into a mapping of A -> B. This will fail if there is more than one `B` for
-   * a given `A`.
-   */
-  def flattenValues[F[_]: Reducible, A: Ordering: Show, B: Eq: Show](
-      fa: SortedMap[A, F[B]]): Either[String, SortedMap[A, B]] =
-    fa.toVector.foldM(SortedMap.empty[A, B]) {
-      case (acc, (k, values)) =>
-        values
-          .reduceLeftM(value => Right(value): Either[String, B]) {
-            case (firstValue, value) =>
-              if (firstValue === value) {
-                Right(firstValue)
-              } else {
-                Left(
-                  show"More than one distinct mapping for distinct key $k: ${firstValue}, ${value}")
-              }
-          }
-          .map(value => acc + (k -> value))
-    }
 }
