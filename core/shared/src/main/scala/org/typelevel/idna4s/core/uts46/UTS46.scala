@@ -334,7 +334,7 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
       codePointIndex match {
         case 0 =>
           checkFirstCodePoint(errors, codePoint)
-        case 3 =>
+        case 3 if checkHyphens =>
           checkHyphen34(errors, previousCodePoint, codePoint)
         case _ =>
           errors
@@ -407,11 +407,14 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
       charIndex: Int): Chain[UTS46Exception] =
       if (charIndex >= len) {
         // step 3 end check
-        bidiType.fold(
-          errors
-        )(bidiType =>
-          checkFinalBidi(checkFinalHyphen(errors, previousCodePoint), bidiType, bidiNumberTypeError, bidiEndLabelValid)
-        )
+        checkFinalHyphen(errors, previousCodePoint) match {
+          case errors =>
+            bidiType.fold(
+              errors
+            )(bidiType =>
+              checkFinalBidi(errors, bidiType, bidiNumberTypeError, bidiEndLabelValid)
+            )
+        }
       } else {
         val cp: Int = value.codePointAt(codePointIndex)
         val nextCPIndex: Int = codePointIndex + 1
@@ -502,7 +505,7 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
         // It is important that we don't ignore the empty label.
         NonEmptyChain.fromChainAppend(acc, value)
       } else {
-        value.span(_ != FULL_STOP) match {
+        value.span(_ =!= FULL_STOP) match {
           case (label, rest) if rest.isEmpty =>
             NonEmptyChain.fromChainAppend(acc, label)
           case (label, rest) =>
