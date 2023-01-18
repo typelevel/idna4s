@@ -49,7 +49,7 @@ final class GeneratedBidirectionalClassTests extends DisciplineSuite {
   }
 
   test("@missing annotated code points are correctly overridden") {
-    // If you are here this because this test started failing on a version of
+    // If you are here because this test started failing on a version of
     // Unicode > 15.0 please read this section. This test is very important,
     // but also may break between Unicode versions.
     //
