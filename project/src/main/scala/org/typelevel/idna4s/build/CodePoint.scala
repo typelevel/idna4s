@@ -27,6 +27,11 @@ final private[build] class CodePoint private (val value: Int) extends AnyVal {
 }
 
 private[build] object CodePoint {
+  val MinValue: CodePoint =
+    CodePoint.unsafeFromInt(0)
+  val MaxValue: CodePoint =
+    CodePoint.unsafeFromInt(Character.MAX_CODE_POINT)
+
   private def apply(value: Int): CodePoint =
     new CodePoint(value)
 

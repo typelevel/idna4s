@@ -1040,52 +1040,6 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
   // Utility functions for working with Maps
 
   /**
-   * For a given `SortedMap`, invert the mapping.
-   */
-  private def invertMapping[A: Order, B: Ordering: Order](
-      value: SortedMap[A, B]): SortedMap[B, NonEmptySet[A]] =
-    value.toList.foldMap {
-      case (k, v) =>
-        SortedMap(v -> NonEmptySet.one(k))
-    }
-
-  /**
-   * For a map of code point range values to some type `A`, collapse ranges of code points which
-   * map to the same `A` into a single code point range. This becomes useful when we are
-   * interested in a certain sub-property of a code point, for example the "General_Category".
-   * When initially parsing the data from `UnicodeData.txt`, these code points might have been
-   * in separate rows because they didn't share all of the code point properties, but after
-   * projecting to a specific sub-property they may be collapsable into a single range.
-   *
-   * By grouping these values when we can, we make the size of the generated code smaller.
-   */
-  private def group[A: Eq: Order](
-      value: SortedMap[CodePointRange, A]): SortedMap[CodePointRange, A] = {
-    implicit def ordering: Ordering[A] = Order[A].toOrdering
-    invertMapping(value).foldLeft(SortedMap.empty[CodePointRange, A]) {
-      // Remember we just inverted this.
-      case (acc, (value, keys)) =>
-        keys
-          .foldLeft((acc, Option.empty[CodePointRange])) {
-            case ((acc, previous), key) =>
-              previous.fold(
-                (acc + (key -> value), Some(key))
-              )(previous =>
-                if (previous.upper.value < Character.MAX_CODE_POINT && (previous
-                    .upper
-                    .value + 1) === key.lower.value) {
-                  val newRange: CodePointRange =
-                    CodePointRange.unsafeFrom(previous.lower, key.upper)
-                  ((acc - previous) + (newRange -> value), Some(newRange))
-                } else {
-                  (acc + (key -> value), Some(key))
-                })
-          }
-          ._1
-    }
-  }
-
-  /**
    * Missing in 2.12.x, deprecated in 2.13.x, so reproduced here.
    */
   private def mapValues[A: Ordering, B, C](value: SortedMap[A, B], f: B => C): SortedMap[A, C] =

@@ -31,7 +31,7 @@ ThisBuild / startYear := Some(2022)
 // Also adds scalafixAll, as that is not in prePR.
 addCommandAlias(
   "prePRAll",
-  s";+scalafixAll;+prePR;reload plugins;clean;scalafixAll;headerCreateAll;")
+  s";+scalafixAll;+prePR;reload plugins;clean;scalafixAll;headerCreateAll;test")
 
 // Utility
 
