@@ -15,6 +15,7 @@ on:
     tags: [v*]
 
 env:
+  JAVA_TOOL_OPTIONS: '-XX:+UseG1GC -XX:MaxHeapFreeRatio=20 -XX:MaxRAMPercentage=95.0 -XX:MinHeapFreeRatio=10 -XX:+UseStringDeduplication'
   PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
   SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
   SONATYPE_CREDENTIAL_HOST: ${{ secrets.SONATYPE_CREDENTIAL_HOST }}
