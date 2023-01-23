@@ -428,7 +428,7 @@ import cats.data._
 private[idna4s] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           Type.Name(BaseTypeName),
           scala.meta.Name(""),
-          Nil)} {
+          Seq.empty)} {
 
 ..${defns}
 }
