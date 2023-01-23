@@ -80,7 +80,7 @@ import scala.collection.immutable.IntMap
 private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         Type.Name(BaseTypeName),
         scala.meta.Name(""),
-        Nil)} {
+        Seq.empty)} {
   override final protected lazy val combiningMarkCodePoints: BitSet = $combiningMarkCodePointsRHS
 
   ..${bidirectionalCategoryDefs(unicodeData)}

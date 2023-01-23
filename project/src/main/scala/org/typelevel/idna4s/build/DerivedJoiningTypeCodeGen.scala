@@ -125,7 +125,7 @@ import scala.collection.immutable.IntMap
 private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         Type.Name(BaseTypeName),
         scala.meta.Name(""),
-        Nil)} {
+        Seq.empty)} {
 ..${joiningTypeMapDef(value)}
 }
 """
