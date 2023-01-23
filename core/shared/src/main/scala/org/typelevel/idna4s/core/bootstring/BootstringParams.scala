@@ -103,9 +103,9 @@ object BootstringParams {
       initialN: Int
   ): Either[NonEmptyList[String], BootstringParams] =
     (
-      (s"tmin must be <= tmax: ${tmin} > ${tmax}".leftNel[Unit]).whenA(tmin.value > tmax.value),
-      (s"initial_bias mod base must be <= base - tmin: ${initialBias} mod ${base} > ${base} - ${tmin}"
-        .leftNel[Unit])
+      s"tmin must be <= tmax: ${tmin} > ${tmax}".leftNel[Unit].whenA(tmin.value > tmax.value),
+      s"initial_bias mod base must be <= base - tmin: ${initialBias} mod ${base} > ${base} - ${tmin}"
+        .leftNel[Unit]
         .whenA(initialBias.value % base.value > (base.value - tmin.value))).parMapN {
       case _ =>
         BootstringParamsImpl(
