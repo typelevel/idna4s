@@ -82,6 +82,10 @@ ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
   scalas = List(Scala212)
 )
 
+ThisBuild / githubWorkflowEnv ++= Map(
+  "JAVA_TOOL_OPTIONS" -> "-XX:+UseG1GC -XX:MaxHeapFreeRatio=20 -Xmx4G -XX:MinHeapFreeRatio=10 -XX:+UseStringDeduplication"
+)
+
 // Projects
 
 lazy val projectName: String = "idna4s"
