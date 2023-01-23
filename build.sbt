@@ -31,7 +31,7 @@ ThisBuild / startYear := Some(2022)
 // Also adds scalafixAll, as that is not in prePR.
 addCommandAlias(
   "prePRAll",
-  s";+scalafixAll;+prePR;reload plugins;clean;scalafixAll;headerCreateAll;")
+  s";+scalafixAll;+prePR;reload plugins;clean;scalafixAll;headerCreateAll;test")
 
 // Utility
 
@@ -80,6 +80,10 @@ ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
     WorkflowStep.Sbt(commands =
       List("reload plugins", "headerCheckAll", "scalafixAll --check", "test"))),
   scalas = List(Scala212)
+)
+
+ThisBuild / githubWorkflowEnv ++= Map(
+  "JAVA_TOOL_OPTIONS" -> "-XX:+UseG1GC -XX:MaxHeapFreeRatio=20 -Xmx4G -XX:MinHeapFreeRatio=10 -XX:+UseStringDeduplication"
 )
 
 // Projects

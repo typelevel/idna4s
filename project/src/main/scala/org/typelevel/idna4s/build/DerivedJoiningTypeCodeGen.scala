@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Typelevel
+ * Copyright 2022 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ import scala.collection.immutable.IntMap
 private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         Type.Name(BaseTypeName),
         scala.meta.Name(""),
-        Nil)} {
+        Seq.empty)} {
 ..${joiningTypeMapDef(value)}
 }
 """

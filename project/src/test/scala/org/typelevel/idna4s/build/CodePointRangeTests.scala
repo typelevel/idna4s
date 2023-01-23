@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Typelevel
+ * Copyright 2022 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,21 @@ import org.typelevel.idna4s.build.ScalacheckInstances._
 import scala.collection.immutable.SortedMap
 
 final class CodePointRangeTests extends ScalaCheckSuite {
-  property("overlap and difference correctness") {
+  property("overlapsWith is consistent with difference") {
+    forAll((a: CodePointRange, b: CodePointRange) =>
+      if (a.overlapsWith(b)) {
+        // CodePointRange doesn't permit empty ranges, so at least one
+        // difference will always be nonEmpty if they overlap.
+        (
+          (Prop(a.difference(b).nonEmpty)) ||
+            (Prop(b.difference(a).nonEmpty))
+        ) :| "a.difference(b).nonEmpty || b.difference(a).nonEmpty"
+      } else {
+        Prop.passed
+      })
+  }
+
+  property("resolveMissingMapping yields no overlapping ranges") {
     forAll { (value: List[(CodePointRange, Int)]) =>
       val noOverlapping: SortedMap[CodePointRange, Int] =
         CodePointRange.resolveMissingMapping(value)
