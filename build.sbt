@@ -83,7 +83,7 @@ ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
 )
 
 ThisBuild / githubWorkflowEnv ++= Map(
-  "JAVA_TOOL_OPTIONS" -> "-XX:+UseG1GC -XX:MaxHeapFreeRatio=20 -XX:MaxRAMPercentage=95.0 -XX:MinHeapFreeRatio=10 -XX:+UseStringDeduplication"
+  "JAVA_TOOL_OPTIONS" -> "-XX:+UseG1GC -XX:MaxHeapFreeRatio=20 -Xmx4G -XX:MinHeapFreeRatio=10 -XX:+UseStringDeduplication"
 )
 
 // Projects
