@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Typelevel
+ * Copyright 2022 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,8 +89,17 @@ sealed abstract private[build] class CodePointRange extends Serializable {
    * which are left of given range and the code points which are right of the given range,
    * either or both of which may be empty.
    */
-  final def difference(that: CodePointRange): (Option[CodePointRange], Option[CodePointRange]) =
-    (leftDifference(that), rightDifference(that))
+  final def difference(that: CodePointRange): Option[Ior[CodePointRange, CodePointRange]] =
+    (leftDifference(that), rightDifference(that)) match {
+      case (Some(l), Some(r)) =>
+        Option(Ior.both(l, r))
+      case (Some(l), _) =>
+        Option(Ior.left(l))
+      case (_, Some(r)) =>
+        Option(Ior.right(r))
+      case _ =>
+        None
+    }
 
   final def size: Int = upper.value - lower.value + 1
 
@@ -160,7 +169,7 @@ private[build] object CodePointRange {
   final def resolveMissingMapping[F[_]: Foldable, A](
       fa: F[(CodePointRange, A)]): SortedMap[CodePointRange, A] =
     fa.foldLeft(SortedMap.empty[CodePointRange, A]) {
-      case (acc, (range, a)) =>
+      case (acc, kv @ (range, a)) =>
         // Check each current mapping to see if it overlaps with the new,
         // higher priority, mapping.  This makes this O(n^2). A much more
         // efficient solution is possible if we had an interval tree data
@@ -168,17 +177,25 @@ private[build] object CodePointRange {
         // cats-collections, but in the mean time we will use this.
         val value = acc.foldLeft(SortedMap.empty[CodePointRange, A]) {
           case (acc, (k, v)) if range.overlapsWith(k) =>
-            val (l, r): (Option[CodePointRange], Option[CodePointRange]) = k.difference(range)
-
-            l.fold(acc)(value => acc + (value -> v)) match {
-              case acc =>
-                r.fold(acc)(value => acc + (value -> v))
-            }
-          case (acc, (k, v)) =>
-            acc + (k -> v)
+            k.difference(range)
+              .fold(
+                // If the difference is empty, then the more specific value
+                // completely overrides the more general value and then we
+                // just replace the current mapping. This is done by merely
+                // not remapping the current mapping.
+                acc
+              )(
+                _.fold(
+                  l => acc + (l -> v),
+                  r => acc + (r -> v),
+                  (l, r) => (acc + (l -> v)) + (r -> v)
+                )
+              )
+          case (acc, kv) =>
+            acc + kv
         }
 
-        value + (range -> a)
+        value + kv
     }
 
   def apply(value: CodePoint): CodePointRange =
