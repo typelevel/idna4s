@@ -49,7 +49,7 @@ final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPla
       CodePointMapper.mapCodePoints(input),
       Left(
         MappingException(
-          NonEmptyList.of(
+          NonEmptyChain.of(
             CodePointMappingException(
               0,
               "Disallowed code point in input.",
