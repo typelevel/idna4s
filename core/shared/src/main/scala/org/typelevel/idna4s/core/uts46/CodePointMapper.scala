@@ -101,11 +101,11 @@ object CodePointMapper extends GeneratedCodePointMapper {
     @tailrec
     def loop(
         acc: StringBuilder,
-        errors: List[CodePointMappingException],
+        errors: Chain[CodePointMappingException],
         index: Int): Either[MappingException, String] =
       if (index >= len || index < 0 /* Overflow check */ ) {
-        NonEmptyList
-          .fromList(errors)
+        NonEmptyChain
+          .fromChain(errors)
           .fold(
             Right(acc.toString): Either[MappingException, String]
           )(errors => Left(MappingException(errors, acc.toString)))
@@ -127,7 +127,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
                   CodePointMappingException(
                     index,
                     "Disallowed code point in input.",
-                    CodePoint.unsafeFromInt(value)) :: errors,
+                    CodePoint.unsafeFromInt(value)) +: errors,
                   nextIndex
                 )
               } else {
@@ -165,7 +165,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
               CodePointMappingException(
                 index,
                 "Disallowed code point in input.",
-                CodePoint.unsafeFromInt(value)) :: errors,
+                CodePoint.unsafeFromInt(value)) +: errors,
               nextIndex
             )
           } else if (ignored(value)) {
@@ -199,7 +199,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
                 CodePointMappingException(
                   index,
                   "Disallowed code point in input.",
-                  CodePoint.unsafeFromInt(value)) :: errors,
+                  CodePoint.unsafeFromInt(value)) +: errors,
                 nextIndex
               )
             } else {
@@ -213,7 +213,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
                 CodePointMappingException(
                   index,
                   "Disallowed code point in input.",
-                  CodePoint.unsafeFromInt(value)) :: errors,
+                  CodePoint.unsafeFromInt(value)) +: errors,
                 nextIndex
               )
             } else {
@@ -227,7 +227,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
                 CodePointMappingException(
                   index,
                   "Disallowed code point in input.",
-                  CodePoint.unsafeFromInt(value)) :: errors,
+                  CodePoint.unsafeFromInt(value)) +: errors,
                 nextIndex
               )
             } else {
@@ -255,7 +255,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
         }
       }
 
-    loop(new StringBuilder(len), Nil, 0)
+    loop(new StringBuilder(len), Chain.empty, 0)
   }
 
   /**
@@ -381,7 +381,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
         override val codePoint: CodePoint)
         extends CodePointMappingException
 
-    def apply(
+    private[idna4s] def apply(
         failureIndex: Int,
         message: String,
         codePoint: CodePoint): CodePointMappingException =
@@ -420,7 +420,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
      * Each [[CodePointMappingException]] describes the mapping failure of an independent code
      * point.
      */
-    def errors: NonEmptyList[CodePointMappingException]
+    def errors: NonEmptyChain[CodePointMappingException]
 
     /**
      * The input string, mapped as much as was possible. Code points which failed replaced with
@@ -438,12 +438,12 @@ object CodePointMapper extends GeneratedCodePointMapper {
 
   object MappingException {
     final private[this] case class MappingExceptionImpl(
-        override val errors: NonEmptyList[CodePointMappingException],
+        override val errors: NonEmptyChain[CodePointMappingException],
         override val partiallyMappedInput: String)
         extends MappingException
 
-    def apply(
-        errors: NonEmptyList[CodePointMappingException],
+    private[idna4s] def apply(
+        errors: NonEmptyChain[CodePointMappingException],
         partiallyMappedInput: String): MappingException =
       MappingExceptionImpl(errors, partiallyMappedInput)
 
