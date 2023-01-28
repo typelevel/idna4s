@@ -382,15 +382,12 @@ private[build] object DerivedBidiClassCodeGen {
           flattenValuesOrError(singles).leftMap(NonEmptyChain.one),
           flattenValuesOrError(ranges).leftMap(NonEmptyChain.one)).parMapN {
           case (singles, ranges) =>
-            val (rangeTerms0, rangeTerms1): (List[Term], List[Term]) =
-              ranges
-                .toList
-                .map {
-                  case (k, v) =>
-                    q"(Range.inclusive(${Lit.Int(k.lower.value)}, ${Lit.Int(
-                        k.upper.value)}), ${Lit.String(v.value)})"
-                }
-                .splitAt(ranges.size / 2)
+            val rangeTerms: List[Term] =
+              ranges.toList.map {
+                case (k, v) =>
+                  q"(Range.inclusive(${Lit.Int(k.lower.value)}, ${Lit.Int(
+                      k.upper.value)}), ${Lit.String(v.value)})"
+              }
 
             def singleTerms: List[Term] =
               singles.toList.map {
@@ -403,9 +400,7 @@ private[build] object DerivedBidiClassCodeGen {
 
             List(
               q"private[this] final def bidiSingleCodePoints = $baseMap",
-              q"private[this] final def ranges0 = Chain(..$rangeTerms0)",
-              q"private[this] final def ranges1 = Chain(..$rangeTerms1)",
-              q"private[this] final def ranges = ranges0 ++ ranges1",
+              q"private[this] final def ranges = List(..$rangeTerms)",
               q"private[this] final lazy val bidiMap = ranges.foldLeft(bidiSingleCodePoints){case (acc, (range, value)) => range.foldLeft(acc){case (acc, cp) => acc.updated(cp, value)}}",
               q"""override final protected def bidiTypeForCodePointInt(cp: Int): String = bidiMap(cp)"""
             )
@@ -423,7 +418,6 @@ private[build] object DerivedBidiClassCodeGen {
 package org.typelevel.idna4s.core.uts46
 
 import scala.collection.immutable.IntMap
-import cats.data._
 
 private[idna4s] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           Type.Name(BaseTypeName),
