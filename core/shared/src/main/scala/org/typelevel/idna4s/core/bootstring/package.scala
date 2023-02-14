@@ -27,9 +27,10 @@ import scala.annotation.tailrec
 
 package object bootstring {
 
-  /** Similar to [[String#lastIndexOf]], but only searches for valid bootstring
-    * [[Delimiter]] values.
-    */
+  /**
+   * Similar to [[String#lastIndexOf]], but only searches for valid bootstring [[Delimiter]]
+   * values.
+   */
   private[idna4s] def lastIndexOf(value: IntBuffer, delimiter: Delimiter): Option[Int] = {
 
     @tailrec
