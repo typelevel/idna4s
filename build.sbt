@@ -33,6 +33,11 @@ addCommandAlias(
   "prePRAll",
   s";+scalafixAll;+prePR;reload plugins;clean;scalafixAll;headerCreateAll;test")
 
+addCommandAlias(
+  "prePRLight",
+  s";prePR;reload plugins;scalafixAll;headerCreateAll;"
+)
+
 // Utility
 
 lazy val wildcardImport: SettingKey[Char] =
