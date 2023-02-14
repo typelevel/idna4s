@@ -53,11 +53,15 @@ package object core {
         acc :+ value
     }
 
-  private[idna4s] def codePointsAsBuffer(value: String): IntBuffer =
-    foldLeftCodePoints(value)(IntBuffer.allocate(value.length)) {
+  private[idna4s] def codePointsAsBuffer(value: String): IntBuffer = {
+    val result: IntBuffer = foldLeftCodePoints(value)(IntBuffer.allocate(value.length)) {
       case (acc, value) =>
         acc.put(value)
-    }.flip
+    }
+
+    result.flip
+    result
+  }
 
   private[idna4s] def stringFromCodePoints(value: IntBuffer): Either[String, String] = {
     val out: CharBuffer = CharBuffer.allocate(value.remaining * 2)
