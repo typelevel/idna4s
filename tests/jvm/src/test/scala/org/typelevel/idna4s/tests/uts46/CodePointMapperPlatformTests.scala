@@ -48,7 +48,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
         mapCodePoints(s)
       val icu4j: String = icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
 
-      idna4s.fold(_.renderablePartiallyMappedInput, identity) ?= icu4j
+      idna4s.fold(_.partiallyMappedInput, identity) ?= icu4j
     }
   }
 
@@ -61,7 +61,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
       val icu4j: String =
         icu4jUTS46Normalizer2.normalize(ascii, new StringBuilder(ascii.size)).toString
 
-      idna4s.fold(_.renderablePartiallyMappedInput, identity) ?= icu4j
+      idna4s.fold(_.partiallyMappedInput, identity) ?= icu4j
     }
   }
 
@@ -72,7 +72,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     val icu4j: String =
       icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
 
-    assertEquals(idna4s.fold(_.renderablePartiallyMappedInput, identity), icu4j)
+    assertEquals(idna4s.fold(_.partiallyMappedInput, identity), icu4j)
   }
 
   test("a̸ࣶa should be consistent with icu4j") {
@@ -82,7 +82,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     val icu4j: String =
       icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
 
-    assertEquals(idna4s.fold(_.renderablePartiallyMappedInput, identity), icu4j)
+    assertEquals(idna4s.fold(_.partiallyMappedInput, identity), icu4j)
   }
 
   test("涇焑ꈛ਽৷降ٰࣶᕹ should be consistent with icu4j") {
@@ -92,7 +92,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     val icu4j: String =
       icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
 
-    assertEquals(idna4s.fold(_.renderablePartiallyMappedInput, identity), icu4j)
+    assertEquals(idna4s.fold(_.partiallyMappedInput, identity), icu4j)
   }
 }
 

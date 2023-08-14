@@ -44,6 +44,7 @@ final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPla
   test("Known invalid input strings should fail") {
     import CodePointMapper._
     val input: String = "$invalid"
+    val unicodeReplacementCharacter: String = "\ufffd"
     assertEquals(
       CodePointMapper.mapCodePoints(input),
       Left(
@@ -51,10 +52,9 @@ final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPla
           NonEmptyChain.of(
             CodePointMappingException(
               0,
-              0,
               "Disallowed code point in input.",
               CodePoint.unsafeFromInt(input.codePointAt(0)))),
-          input
+          s"${unicodeReplacementCharacter}invalid"
         ))
     )
   }
