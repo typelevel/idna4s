@@ -42,8 +42,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
    *
    * Results are sentinel values or mapped code points.
    *
-   * -1 = DISALLOWED_STD3_VALID
-   * -2 = VALID
+   * -1 = DISALLOWED_STD3_VALID -2 = VALID
    *
    * Anything else is a mapped code point.
    */
