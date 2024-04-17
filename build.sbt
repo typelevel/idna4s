@@ -15,7 +15,7 @@ val disciplineMunitV = "2.0.0-M3"
 val icu4jV           = "73.1"
 val literallyV       = "1.1.0"
 val munitV           = "1.0.0-M6"
-val scalacheckV      = "1.17.0"
+val scalacheckV      = "1.17.1"
 
 ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
 ThisBuild / scalaVersion       := Scala213
