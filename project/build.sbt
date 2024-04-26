@@ -20,7 +20,7 @@ libraryDependencies ++= List(
 )
 
 libraryDependencies ++= List(
-  "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M7" % Test,
-  "org.typelevel" %%% "cats-laws"        % "2.9.0"    % Test,
-  "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test
+  "org.scalameta" %%% "munit-scalacheck" % "1.0.0-RC1" % Test,
+  "org.typelevel" %%% "cats-laws"        % "2.9.0"     % Test,
+  "org.typelevel" %%% "discipline-munit" % "2.0.0-M3"  % Test
 )
