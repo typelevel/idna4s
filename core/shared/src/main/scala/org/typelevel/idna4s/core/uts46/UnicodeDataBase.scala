@@ -21,7 +21,6 @@
 
 package org.typelevel.idna4s.core.uts46
 
-import scala.collection.immutable.IntMap
 import cats.collections.BitSet
 
 /**
@@ -67,17 +66,4 @@ private[uts46] trait UnicodeDataBase {
    *   [[https://www.iana.org/assignments/idna-tables-12.0.0/idna-tables-12.0.0.xhtml]]
    */
   protected def viramaCanonicalCombiningClassCodePoints: BitSet
-
-  /**
-   * The bidirectional category for all Unicode code points.
-   *
-   * These are used to check the bidi (bidirectional) rules for the UTS-46 validity criteria.
-   * The actual rules are defined in RFC-5893 section 2.
-   *
-   * @see
-   *   [[https://www.unicode.org/reports/tr46/#Validity_Criteria Validity_Criteria]]
-   * @see
-   *   [[https://www.rfc-editor.org/rfc/rfc5893.txt]]
-   */
-  protected def bidirectionalCategoryMap: IntMap[String]
 }
