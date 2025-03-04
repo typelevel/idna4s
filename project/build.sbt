@@ -16,7 +16,7 @@ libraryDependencies ++= List(
   "org.scalameta"  % "semanticdb-scalac" % "4.7.7" cross CrossVersion.full,
   "org.scalameta" %% "scalameta"         % "4.7.7",
   "org.typelevel" %% "cats-core"         % "2.9.0",
-  "org.typelevel" %% "kittens"           % "3.0.0"
+  "org.typelevel" %% "kittens"           % "3.5.0"
 )
 
 libraryDependencies ++= List(
