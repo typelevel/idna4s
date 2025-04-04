@@ -16,7 +16,6 @@
 
 package org.typelevel.idna4s.build
 
-import cats._
 import cats.data._
 import cats.syntax.all._
 import sbt._

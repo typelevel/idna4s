@@ -5,17 +5,18 @@ ThisBuild / tlBaseVersion := "0.1"
 val UnicodeVersion: String = "15.0.0"
 
 val Scala212                    = "2.12.17"
-val Scala213                    = "2.13.10"
-val Scala3                      = "3.2.2"
+val Scala213                    = "2.13.16"
+val Scala3                      = "3.3.5"
 def DefaultScalaVersion: String = Scala213
 
-val catsCollectionsV = "0.9.6"
-val catsV            = "2.8.0"
-val disciplineMunitV = "2.0.0-M3"
+val catsCollectionsV = "0.9.9"
+val catsV            = "2.13.0"
+val disciplineMunitV = "2.0.0"
 val icu4jV           = "73.1"
-val literallyV       = "1.1.0"
-val munitV           = "1.0.0-M6"
-val scalacheckV      = "1.17.0"
+val literallyV       = "1.2.0"
+val munitV           = "1.0.0"
+val munitScalacheckV = "1.1.0"
+val scalacheckV      = "1.18.1"
 
 ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
 ThisBuild / scalaVersion       := Scala213
@@ -125,7 +126,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       }
     },
     libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit-scalacheck" % munitV,
+      "org.scalameta" %%% "munit"            % munitV,
+      "org.scalameta" %%% "munit-scalacheck" % munitScalacheckV,
       "org.typelevel" %%% "discipline-munit" % disciplineMunitV
     ).map(_ % Test),
     console / initialCommands := {

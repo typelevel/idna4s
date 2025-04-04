@@ -21,11 +21,8 @@ import cats.data._
 import cats.syntax.all._
 import java.io.File
 import java.net.URI
-import java.net.URL
 import sbt._
 import scala.annotation.tailrec
-import scala.util.Failure
-import scala.util.Success
 import scala.util.matching._
 import scala.collection.immutable.SortedSet
 import scala.collection.immutable.SortedMap
@@ -521,28 +518,28 @@ object UTS46CodeGen {
      */
     private def asSourceTree: Tree = {
       // The Type of a BitSet
-      val bitSetType: Type =
-        t"BitSet"
+      // val bitSetType: Type =
+      //  t"BitSet"
 
       // Create a Type for an IntMap
-      def intMapType(valueType: Type): Type =
-        t"IntMap[$valueType]"
+      // def intMapType(valueType: Type): Type =
+      //  t"IntMap[$valueType]"
 
       // Create a Type for a NonEmptyList
       def nelType(valueType: Type): Type =
         t"NonEmptyList[$valueType]"
 
       // A Type for an IntMap[Int]
-      val intMapOfIntType: Type =
-        intMapType(t"Int")
+      // val intMapOfIntType: Type =
+      //  intMapType(t"Int")
 
       // A Type for a NonEmptyList[Int]
       val nelOfIntType: Type =
         nelType(t"Int")
 
       // A Type for an IntMap[NonEmptyList[Int]]
-      val intMapOfNELOfIntType: Type =
-        intMapType(nelOfIntType)
+      // val intMapOfNELOfIntType: Type =
+      //  intMapType(nelOfIntType)
 
       // Convert a NonEmptyList[Int] into a AST which would generate the same
       // NonEmptyList[Int]
