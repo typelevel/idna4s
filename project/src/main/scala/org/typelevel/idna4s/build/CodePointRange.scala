@@ -169,7 +169,7 @@ private[build] object CodePointRange {
   final def resolveMissingMapping[F[_]: Foldable, A](
       fa: F[(CodePointRange, A)]): SortedMap[CodePointRange, A] =
     fa.foldLeft(SortedMap.empty[CodePointRange, A]) {
-      case (acc, kv @ (range, a)) =>
+      case (acc, kv @ (range, _)) =>
         // Check each current mapping to see if it overlaps with the new,
         // higher priority, mapping.  This makes this O(n^2). A much more
         // efficient solution is possible if we had an interval tree data

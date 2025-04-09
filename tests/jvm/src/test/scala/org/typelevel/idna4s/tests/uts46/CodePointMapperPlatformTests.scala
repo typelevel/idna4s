@@ -21,7 +21,6 @@
 
 package org.typelevel.idna4s.tests.uts46
 
-import cats.syntax.all._
 import com.ibm.icu.text.Normalizer2
 import java.lang.StringBuilder
 import java.text.Normalizer

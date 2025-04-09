@@ -39,6 +39,7 @@ private object CodePointSyntax {
       using q: Quotes): Expr[CodePoint] =
     sc.value match {
       case Some(sc) if sc.parts.size === 1 =>
+        val _ = args
         val value: String = sc.parts.head
         CodePoint
           .fromString(value)
