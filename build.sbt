@@ -9,7 +9,7 @@ val Scala213                    = "2.13.16"
 val Scala3                      = "3.3.5"
 def DefaultScalaVersion: String = Scala213
 
-val catsCollectionsV = "0.9.9"
+val catsCollectionsV = "0.9.10"
 val catsV            = "2.13.0"
 val disciplineMunitV = "2.0.0"
 val icu4jV           = "73.1"
