@@ -477,8 +477,9 @@ object CodePointMapper extends GeneratedCodePointMapper {
         val outBuffer: IntBuffer =
           codePointsAsBuffer(unsafePartiallyMappedInput)
         val len: Int = outBuffer.limit
-        errors.traverse_(error =>
-          outBuffer.put(error.outputFailureIndex, ReplacementCharacter): Id[Unit])
+        errors.iterator.foreach { error =>
+          val _ = outBuffer.put(error.outputFailureIndex, ReplacementCharacter)
+        }
 
         new String(outBuffer.array(), 0, len)
       }

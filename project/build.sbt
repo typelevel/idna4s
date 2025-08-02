@@ -13,14 +13,14 @@ organizationName         := "Typelevel"
 startYear                := Some(2022)
 
 libraryDependencies ++= List(
-  "org.scalameta"  % "semanticdb-scalac" % "4.7.7" cross CrossVersion.full,
-  "org.scalameta" %% "scalameta"         % "4.7.7",
-  "org.typelevel" %% "cats-core"         % "2.9.0",
-  "org.typelevel" %% "kittens"           % "3.0.0"
+  "org.scalameta"  % "semanticdb-scalac" % "4.13.9" cross CrossVersion.full,
+  "org.scalameta" %% "scalameta"         % "4.13.9",
+  "org.typelevel" %% "cats-core"         % "2.13.0",
+  "org.typelevel" %% "kittens"           % "3.5.0"
 )
 
 libraryDependencies ++= List(
-  "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M7" % Test,
-  "org.typelevel" %%% "cats-laws"        % "2.9.0"    % Test,
-  "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test
+  "org.scalameta" %%% "munit-scalacheck" % "1.1.0"  % Test,
+  "org.typelevel" %%% "cats-laws"        % "2.13.0" % Test,
+  "org.typelevel" %%% "discipline-munit" % "2.0.0"  % Test
 )

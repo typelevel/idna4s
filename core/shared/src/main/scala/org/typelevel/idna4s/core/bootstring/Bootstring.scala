@@ -26,7 +26,6 @@ import java.lang.Math
 import java.nio.IntBuffer
 import org.typelevel.idna4s.core._
 import scala.annotation.tailrec
-import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
@@ -96,7 +95,7 @@ object Bootstring {
 
       // Insert the delimiter if there is at least one basic code point
       if (basicCodePointCount =!= 0) {
-        basicCodePoints.put(params.delimiter.codePointInt)
+        val _ = basicCodePoints.put(params.delimiter.codePointInt)
       }
 
       nonBasicCodePoints.foldLeft(
@@ -152,8 +151,6 @@ object Bootstring {
   )(
       value: String
   ): Either[BootstringException, String] = {
-    type Index = Int
-
     // Insert a value into an `IntBuffer` at an index. If the `IntBuffer`
     // already has a value at the index, shift all values from the index to
     // position to the right.
@@ -258,7 +255,7 @@ object Bootstring {
           }
       }
 
-    @tailrec
+    /*@tailrec
     def doOutput(
         basicCodePoints: List[Int],
         nonBasicCodePointMap: SortedMap[Index, Int],
@@ -285,7 +282,7 @@ object Bootstring {
                       s"Exhausted basic code points at index ${out.position()}, but we still have ${nonBasicCodePointMap.size} non basic code points to encode (next index is at ${pos}).")
                 }
           }
-      }
+      }*/
 
     try {
       // Split out the basic and non-basic sections of the encoded string.

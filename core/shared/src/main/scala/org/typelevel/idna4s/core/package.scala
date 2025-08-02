@@ -108,7 +108,9 @@ package object core {
     buffer
   }
 
+  // scalafix:off
   final private[this] val HalfIntMaxValue = Int.MaxValue / 2
+  // scalafix:on
 
   /**
    * Calculate the a new size for an `IntBuffer` so that it can accept at ''least'' the given
