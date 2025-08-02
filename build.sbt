@@ -6,15 +6,15 @@ val UnicodeVersion: String = "15.0.0"
 
 val Scala212                    = "2.12.20"
 val Scala213                    = "2.13.16"
-val Scala3                      = "3.3.5"
+val Scala3                      = "3.3.6"
 def DefaultScalaVersion: String = Scala213
 
-val catsCollectionsV = "0.9.9"
+val catsCollectionsV = "0.9.10"
 val catsV            = "2.13.0"
 val disciplineMunitV = "2.0.0"
 val icu4jV           = "73.1"
 val literallyV       = "1.2.0"
-val munitV           = "1.0.0"
+val munitV           = "1.0.4"
 val munitScalacheckV = "1.1.0"
 val scalacheckV      = "1.18.1"
 
