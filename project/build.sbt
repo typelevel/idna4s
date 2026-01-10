@@ -13,8 +13,8 @@ organizationName         := "Typelevel"
 startYear                := Some(2022)
 
 libraryDependencies ++= List(
-  "org.scalameta"  % "semanticdb-scalac" % "4.13.9" cross CrossVersion.full,
-  "org.scalameta" %% "scalameta"         % "4.13.9",
+  "org.scalameta"  % "semanticdb-scalac" % "4.13.10" cross CrossVersion.full,
+  "org.scalameta" %% "scalameta"         % "4.13.10",
   "org.typelevel" %% "cats-core"         % "2.13.0",
   "org.typelevel" %% "kittens"           % "3.5.0"
 )
