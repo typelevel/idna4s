@@ -61,18 +61,6 @@ ThisBuild / scalafixConfig := {
     Some(file(".scalafix-base.conf"))
   } else scalafixConfig.value
 }
-ThisBuild / scalafixScalaBinaryVersion := {
-  if ((LocalRootProject / scalaVersion).value != DefaultScalaVersion) {
-    // This is the default according to Scalafix, but the key
-    // `scalafixScalaBinaryVersion` isn't actually set in the Global scope, so
-    // we can't use `scalafixScalaBinaryVersion.value` here. I believe they
-    // are defaulting the the plugin code, rather than in the sbt scope,
-    // e.g. `scalafixScalaBinaryVersion.value.?.getOrElse("2.12")`
-    "2.12"
-  } else {
-    (LocalRootProject / scalaBinaryVersion).value
-  }
-}
 
 ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 
