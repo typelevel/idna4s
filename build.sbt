@@ -66,6 +66,8 @@ ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 
 // SBT Typelevel Github Actions
 
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
+
 ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
   id = "codegen",
   name = "Codegen Test/Lint",
