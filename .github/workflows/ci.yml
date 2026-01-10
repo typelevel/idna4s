@@ -287,7 +287,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        scala: [2.12.20]
+        scala: [2.12.21]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
