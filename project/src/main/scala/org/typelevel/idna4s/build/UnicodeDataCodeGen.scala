@@ -96,7 +96,8 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
    * Parse the raw rows for a given [[UnicodeVersion]].
    */
   private def rowsFromUnicodeVersion(
-      unicodeVersion: UnicodeVersion): Either[Throwable, Chain[UnicodeDataRow]] =
+      unicodeVersion: UnicodeVersion): Either[Throwable, Chain[UnicodeDataRow]] = {
+
     Either
       .catchNonFatal(
         URI
@@ -106,6 +107,7 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
       .flatMap(
         rowsFromUrl
       )
+  }
 
   /**
    * ADT used to keep track of whether a line in `UnicodeData.txt` represents the start or end

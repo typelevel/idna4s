@@ -2,7 +2,7 @@ import org.typelevel.idna4s.build._
 
 ThisBuild / tlBaseVersion := "0.1"
 
-val UnicodeVersion: String = "15.0.0"
+val UnicodeVersion: String = "17.0.0"
 
 val Scala212                    = "2.12.21"
 val Scala213                    = "2.13.18"
@@ -12,7 +12,7 @@ def DefaultScalaVersion: String = Scala213
 val catsCollectionsV = "0.9.10"
 val catsV            = "2.13.0"
 val disciplineMunitV = "2.0.0"
-val icu4jV           = "75.1" // Starting with 76.1 and through latest, 78.2, CodePointMapperTests fail
+val icu4jV           = "78.2"
 val literallyV       = "1.2.0"
 val munitV           = "1.2.1"
 val munitScalacheckV = "1.2.0"
