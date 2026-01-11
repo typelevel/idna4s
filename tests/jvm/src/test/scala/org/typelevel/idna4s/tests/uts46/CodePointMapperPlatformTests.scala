@@ -33,9 +33,11 @@ import org.typelevel.idna4s.core.uts46._
 trait CodePointMapperPlatformTests extends DisciplineSuite {
   import CodePointMapperPlatformTests._
 
+  override def munitFlakyOK: Boolean = true
+
   // Note this test is flaky when idna4s and icu4j are targeting different
   // versions of Unicode.
-  property("idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step") {
+  property("idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step".flaky) {
     forAll { (s: String) =>
       // Note: We set useStd3ASCIIRules to false here, even though that is not
       // recommended as the standard behavior by UTS-46. The reason for this

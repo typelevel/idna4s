@@ -33,7 +33,7 @@ import org.typelevel.idna4s.core.syntax.all._
 final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPlatformTests {
 
   override def scalaCheckTestParameters: Test.Parameters =
-    super.scalaCheckTestParameters.withMinSuccessfulTests(10000)
+    super.scalaCheckTestParameters.withMinSuccessfulTests(100000)
 
   property("Any valid unicode code point should have a code point status") {
     // This is really just a check that we don't hit the AssertionError case.
