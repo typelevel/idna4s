@@ -23,7 +23,7 @@ package org.typelevel.idna4s.tests.uts46
 
 import cats.data._
 import munit._
-import org.scalacheck.Prop
+import org.scalacheck.{Prop, Test}
 import org.scalacheck.Prop._
 import org.typelevel.idna4s.core._
 import org.typelevel.idna4s.core.uts46._
@@ -32,7 +32,7 @@ import org.typelevel.idna4s.core.syntax.all._
 
 final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPlatformTests {
 
-  override def scalaCheckTestParameters =
+  override def scalaCheckTestParameters: Test.Parameters =
     super.scalaCheckTestParameters.withMinSuccessfulTests(10000)
 
   property("Any valid unicode code point should have a code point status") {
