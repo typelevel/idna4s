@@ -56,7 +56,8 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     "궈ㄻ", // Tests post-mapping canonization
     "a\u0360b",
     "\u0360\u1ac6", // Tests ordering of undefined chars that are in a diacritical mark block
-    "\u089f\u0334"
+    "\u089f\u0334",
+    "\u03b9\u05b4"
   )
 
   ConsistencyChecks.foreach { s =>
@@ -83,12 +84,12 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     if (idna4sNormalized =!= icu4j) {
       val allDefined = input.forall(Character.isDefined)
       if (allDefined) {
-        fail(
-          s"expected: ${descriptivePrint(icu4j)}, got: ${descriptivePrint(idna4sNormalized)}")
+        fail(s"for input ${descriptivePrint(input)}, expected: ${descriptivePrint(
+            icu4j)}, got: ${descriptivePrint(idna4sNormalized)}")
 
       } else {
         println(
-          s"ignoring inconsistent response due to input string containing undefined unicode characters: ${descriptivePrint(input)}")
+          s"for input ${descriptivePrint(input)}, ignoring inconsistent response due to input string containing undefined unicode characters")
       }
     }
   }
