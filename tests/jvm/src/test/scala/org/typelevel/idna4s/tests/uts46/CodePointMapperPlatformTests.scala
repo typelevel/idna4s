@@ -52,9 +52,9 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     "",
     "a̸ࣶa",
     "涇焑ꈛ਽৷降ٰࣶᕹ",
-    "궈ㄻ",
+    "궈ㄻ", // Tests post-mapping canonization
     "a\u0360b",
-    "\u0360\u1ac6",
+    "\u0360\u1ac6", // Tests ordering of undefined chars that are in a diacritical mark block
     "\u089f\u0334"
   )
 
@@ -77,7 +77,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     val icu4j: String =
       icu4jUTS46Normalizer2.normalize(input, new StringBuilder(input.size)).toString
 
-    // Normalize the output as icu4j outputs compressed code points
+    // Normalize the output as icu4j outputs canonical code points
     val idna4sNormalized = nfc(idna4s.fold(_.renderablePartiallyMappedInput, identity))
     if (idna4sNormalized != icu4j) {
       val allDefined = input.forall(Character.isDefined)
