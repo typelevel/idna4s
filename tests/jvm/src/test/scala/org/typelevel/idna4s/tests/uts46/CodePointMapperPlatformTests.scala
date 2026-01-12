@@ -26,6 +26,7 @@ import java.lang.StringBuilder
 import java.text.Normalizer
 import java.util.Arrays
 import munit._
+import cats.syntax.all._
 import org.scalacheck.Prop._
 import org.scalacheck._
 import org.typelevel.idna4s.core.uts46.CodePointMapper._
@@ -48,7 +49,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     forAll(Gen.asciiStr) { ascii => assertConsistency(ascii) }
   }
 
-  val ConsistencyChecks = List(
+  val ConsistencyChecks: List[String] = List(
     "",
     "a̸ࣶa",
     "涇焑ꈛ਽৷降ٰࣶᕹ",
@@ -79,7 +80,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
 
     // Normalize the output as icu4j outputs canonical code points
     val idna4sNormalized = nfc(idna4s.fold(_.renderablePartiallyMappedInput, identity))
-    if (idna4sNormalized != icu4j) {
+    if (idna4sNormalized =!= icu4j) {
       val allDefined = input.forall(Character.isDefined)
       if (allDefined) {
         fail(
