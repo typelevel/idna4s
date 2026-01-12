@@ -53,7 +53,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     "",
     "a̸ࣶa",
     "涇焑ꈛ਽৷降ٰࣶᕹ",
-    "궈ㄻ", // Tests post-mapping canonization
+    "궈ㄻ", // Tests post-mapping canonicalization
     "a\u0360b",
     "\u0360\u1ac6", // Tests ordering of undefined chars that are in a diacritical mark block
     "\u089f\u0334",
@@ -63,6 +63,18 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
   ConsistencyChecks.foreach { s =>
     test(s"̸ࣶicu4j consistency: ${descriptivePrint(s)}") {
       assertConsistency(s)
+    }
+  }
+
+  val InconsistencyChecks: List[String] = List(
+    "\u0345\u20e5" // NFC normalization reorders this, resulting in inconsistency with icu4j
+  )
+
+  InconsistencyChecks.foreach { s =>
+    test(s"̸ࣶicu4j inconsistency: ${descriptivePrint(s)}") {
+      intercept[FailException] {
+        assertConsistency(s)
+      }
     }
   }
 
