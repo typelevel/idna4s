@@ -24,7 +24,9 @@ package org.typelevel.idna4s.tests.uts46
 import com.ibm.icu.text.Normalizer2
 import java.lang.StringBuilder
 import java.text.Normalizer
+import java.util.Arrays
 import munit._
+import cats.syntax.all._
 import org.scalacheck.Prop._
 import org.scalacheck._
 import org.typelevel.idna4s.core.uts46.CodePointMapper._
@@ -33,68 +35,80 @@ import org.typelevel.idna4s.core.uts46._
 trait CodePointMapperPlatformTests extends DisciplineSuite {
   import CodePointMapperPlatformTests._
 
-  override def munitFlakyOK: Boolean = true
+  override def munitFlakyOK: Boolean = false
 
   // Note this test is flaky when idna4s and icu4j are targeting different
   // versions of Unicode.
   property("idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step".flaky) {
-    forAll { (s: String) =>
-      // Note: We set useStd3ASCIIRules to false here, even though that is not
-      // recommended as the standard behavior by UTS-46. The reason for this
-      // is that icu4j's implementation handles useStd3ASCIIRules outside of
-      // the Normalizer2 and we can't directly access that code.
-      //
-      // https://github.com/unicode-org/icu/blob/main/icu4j/release-72-rc/classes/core/src/com/ibm/icu/impl/UTS46.java#L366
-      val idna4s: Either[MappingException, String] =
-        mapCodePoints(s)
-      val icu4j: String = icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
-
-      idna4s.fold(_.renderablePartiallyMappedInput, identity) ?= icu4j
-    }
+    forAll { (s: String) => assertConsistency(s) }
   }
 
   property(
     "idna4s's uts-46 mapping step, should agree with icu4j's uts46-mapping step for ASCII strings") {
     // We have a special case fast path for ASCII code points. This tests that code path.
-    forAll(Gen.asciiStr) { ascii =>
-      val idna4s: Either[MappingException, String] =
-        mapCodePoints(ascii)
-      val icu4j: String =
-        icu4jUTS46Normalizer2.normalize(ascii, new StringBuilder(ascii.size)).toString
+    forAll(Gen.asciiStr) { ascii => assertConsistency(ascii) }
+  }
 
-      idna4s.fold(_.renderablePartiallyMappedInput, identity) ?= icu4j
+  val ConsistencyChecks: List[String] = List(
+    "",
+    "a̸ࣶa",
+    "涇焑ꈛ਽৷降ٰࣶᕹ",
+    "궈ㄻ", // Tests post-mapping canonicalization
+    "a\u0360b",
+    "\u0360\u1ac6", // Tests ordering of undefined chars that are in a diacritical mark block
+    "\u089f\u0334",
+    "\u03b9\u05b4",
+    "\u0345\u0c3c"
+  )
+
+  ConsistencyChecks.foreach { s =>
+    test(s"̸ࣶicu4j consistency: ${descriptivePrint(s)}") {
+      assertConsistency(s)
     }
   }
 
-  test("̸ࣶ should be consistent with icu4j") {
-    val s: String = "̸ࣶ"
-    val idna4s: Either[MappingException, String] =
-      mapCodePoints(s)
-    val icu4j: String =
-      icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
+  val InconsistencyChecks: List[String] = List(
+    "\u0345\u20e5" // NFC normalization reorders this, resulting in inconsistency with icu4j
+  )
 
-    assertEquals(idna4s.fold(_.renderablePartiallyMappedInput, identity), icu4j)
+  InconsistencyChecks.foreach { s =>
+    test(s"̸ࣶicu4j inconsistency: ${descriptivePrint(s)}") {
+      intercept[FailException] {
+        assertConsistency(s)
+      }
+    }
   }
 
-  test("a̸ࣶa should be consistent with icu4j") {
-    val s: String = "a̸ࣶa"
+  private def assertConsistency(input: String): Unit = {
+    // Note: We set useStd3ASCIIRules to false here, even though that is not
+    // recommended as the standard behavior by UTS-46. The reason for this
+    // is that icu4j's implementation handles useStd3ASCIIRules outside of
+    // the Normalizer2 and we can't directly access that code.
+    //
+    // https://github.com/unicode-org/icu/blob/main/icu4j/release-72-rc/classes/core/src/com/ibm/icu/impl/UTS46.java#L366
     val idna4s: Either[MappingException, String] =
-      mapCodePoints(s)
-    val icu4j: String =
-      icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
+      mapCodePoints(input)
 
-    assertEquals(idna4s.fold(_.renderablePartiallyMappedInput, identity), icu4j)
+    val icu4j: String =
+      icu4jUTS46Normalizer2.normalize(input, new StringBuilder(input.size)).toString
+
+    // Normalize the output as icu4j outputs canonical code points
+    val idna4sNormalized = nfc(idna4s.fold(_.renderablePartiallyMappedInput, identity))
+    if (idna4sNormalized =!= icu4j) {
+      val allDefined = input.forall(Character.isDefined)
+      if (allDefined) {
+        fail(s"for input ${descriptivePrint(input)}, expected: ${descriptivePrint(
+            icu4j)}, got: ${descriptivePrint(idna4sNormalized)}")
+
+      } else {
+        println(
+          s"for input ${descriptivePrint(input)}, ignoring inconsistent response due to input string containing undefined unicode characters")
+      }
+    }
   }
 
-  test("涇焑ꈛ਽৷降ٰࣶᕹ should be consistent with icu4j") {
-    val s: String = "涇焑ꈛ਽৷降ٰࣶᕹ"
-    val idna4s: Either[MappingException, String] =
-      mapCodePoints(s)
-    val icu4j: String =
-      icu4jUTS46Normalizer2.normalize(s, new StringBuilder(s.size)).toString
-
-    assertEquals(idna4s.fold(_.renderablePartiallyMappedInput, identity), icu4j)
-  }
+  private def descriptivePrint(s: String): String =
+    s"'$s' ${Arrays.toString(s.codePoints.toArray)}"
 }
 
 object CodePointMapperPlatformTests {

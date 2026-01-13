@@ -819,13 +819,16 @@ private[uts46] abstract class GeneratedCodePointMapper extends GeneratedCodePoin
      *   versions on their site that we probably don't want to implement a release against.
      */
     def fromUnicodeURL(version: Option[UnicodeVersion]): Either[Throwable, Rows] = {
-      def makeUrl(rawVersion: String): String =
-        s"https://www.unicode.org/Public/idna/${rawVersion}/IdnaMappingTable.txt"
 
-      val url: String =
-        version.fold(
-          makeUrl("latest")
-        )(version => makeUrl(version.asString))
+      val url =
+        version match {
+          case Some(v: UnicodeVersion.Numeric) if v.major.toInt <= 16 =>
+            s"https://www.unicode.org/Public/idna/${v.asString}/IdnaMappingTable.txt"
+          case Some(v) =>
+            s"https://www.unicode.org/Public/${v.asString}/idna/IdnaMappingTable.txt"
+          case None =>
+            s"https://www.unicode.org/Public/latest/idna/IdnaMappingTable.txt"
+        }
 
       fromURL(url).flatMap(rows =>
         // Validate that if an explicit version was specified, that is what we

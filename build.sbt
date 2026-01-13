@@ -2,7 +2,7 @@ import org.typelevel.idna4s.build._
 
 ThisBuild / tlBaseVersion := "0.1"
 
-val UnicodeVersion: String = "15.0.0"
+val UnicodeVersion: String = "17.0.0"
 
 val Scala212                    = "2.12.21"
 val Scala213                    = "2.13.18"
@@ -12,7 +12,7 @@ def DefaultScalaVersion: String = Scala213
 val catsCollectionsV = "0.9.10"
 val catsV            = "2.13.0"
 val disciplineMunitV = "2.0.0"
-val icu4jV           = "73.2"
+val icu4jV           = "78.2"
 val literallyV       = "1.2.0"
 val munitV           = "1.2.1"
 val munitScalacheckV = "1.2.0"
@@ -95,6 +95,27 @@ lazy val root = tlCrossRootProject
   )
   .settings(name := projectName)
 
+val codeGen = Def.task {
+  val cache    = streams.value.cacheDirectory / "idna4s-codegen"
+  val log      = streams.value.log
+  val inputDir = cache / "inputs"
+  IO.createDirectory(inputDir)
+  val versionFile = inputDir / "version.txt"
+
+  val lastUnicodeVersion = if (versionFile.exists()) IO.read(versionFile) else ""
+  if (lastUnicodeVersion != UnicodeVersion)
+    IO.write(versionFile, UnicodeVersion)
+
+  val outputDir = (Compile / sourceManaged).value
+
+  val genCacheAware = FileFunction.cached(cache / "outputs") { _ =>
+    log.info(s"Generating code for unicode $UnicodeVersion to $outputDir")
+    CodeGen.generate(outputDir, UnicodeVersion).toSet
+  }
+
+  genCacheAware(Set(versionFile)).toSeq
+}
+
 lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
@@ -131,13 +152,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
     },
     consoleQuick / initialCommands := "",
-    Compile / sourceGenerators ++= List(
-      (Compile / sourceManaged)
-        .map(
-          CodeGen.generate(_, UnicodeVersion)
-        )
-        .taskValue
-    )
+    Compile / sourceGenerators += codeGen.taskValue
   )
 
 lazy val scalacheck = crossProject(JVMPlatform, JSPlatform, NativePlatform)
