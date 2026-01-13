@@ -57,7 +57,8 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
     "a\u0360b",
     "\u0360\u1ac6", // Tests ordering of undefined chars that are in a diacritical mark block
     "\u089f\u0334",
-    "\u03b9\u05b4"
+    "\u03b9\u05b4",
+    "\u0345\u0c3c"
   )
 
   ConsistencyChecks.foreach { s =>
