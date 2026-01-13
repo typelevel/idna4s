@@ -97,6 +97,7 @@ lazy val root = tlCrossRootProject
 
 val codeGen = Def.task {
   val cache    = streams.value.cacheDirectory / "idna4s-codegen"
+  val log      = streams.value.log
   val inputDir = cache / "inputs"
   IO.createDirectory(inputDir)
   val versionFile = inputDir / "version.txt"
@@ -108,7 +109,7 @@ val codeGen = Def.task {
   val outputDir = (Compile / sourceManaged).value
 
   val genCacheAware = FileFunction.cached(cache / "outputs") { _ =>
-    streams.value.log.info(s"Generating code for unicode $UnicodeVersion")
+    log.info(s"Generating code for unicode $UnicodeVersion")
     CodeGen.generate(outputDir, UnicodeVersion).toSet
   }
 
