@@ -4,18 +4,19 @@ ThisBuild / tlBaseVersion := "0.1"
 
 val UnicodeVersion: String = "15.0.0"
 
-val Scala212                    = "2.12.17"
-val Scala213                    = "2.13.10"
-val Scala3                      = "3.2.1"
+val Scala212                    = "2.12.21"
+val Scala213                    = "2.13.18"
+val Scala3                      = "3.3.7"
 def DefaultScalaVersion: String = Scala213
 
-val catsCollectionsV = "0.9.5"
-val catsV            = "2.8.0"
-val disciplineMunitV = "2.0.0-M3"
-val icu4jV           = "72.1"
-val literallyV       = "1.1.0"
-val munitV           = "1.0.0-M6"
-val scalacheckV      = "1.17.0"
+val catsCollectionsV = "0.9.10"
+val catsV            = "2.13.0"
+val disciplineMunitV = "2.0.0"
+val icu4jV           = "73.2"
+val literallyV       = "1.2.0"
+val munitV           = "1.2.1"
+val munitScalacheckV = "1.2.0"
+val scalacheckV      = "1.19.0"
 
 ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
 ThisBuild / scalaVersion       := Scala213
@@ -32,6 +33,11 @@ ThisBuild / startYear := Some(2022)
 addCommandAlias(
   "prePRAll",
   s";+scalafixAll;+prePR;reload plugins;clean;scalafixAll;headerCreateAll;test")
+
+addCommandAlias(
+  "prePRLight",
+  s";prePR;reload plugins;scalafixAll;headerCreateAll;"
+)
 
 // Utility
 
@@ -55,22 +61,12 @@ ThisBuild / scalafixConfig := {
     Some(file(".scalafix-base.conf"))
   } else scalafixConfig.value
 }
-ThisBuild / scalafixScalaBinaryVersion := {
-  if ((LocalRootProject / scalaVersion).value != DefaultScalaVersion) {
-    // This is the default according to Scalafix, but the key
-    // `scalafixScalaBinaryVersion` isn't actually set in the Global scope, so
-    // we can't use `scalafixScalaBinaryVersion.value` here. I believe they
-    // are defaulting the the plugin code, rather than in the sbt scope,
-    // e.g. `scalafixScalaBinaryVersion.value.?.getOrElse("2.12")`
-    "2.12"
-  } else {
-    (LocalRootProject / scalaBinaryVersion).value
-  }
-}
 
 ThisBuild / ScalafixConfig / skip := tlIsScala3.value
 
 // SBT Typelevel Github Actions
+
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 
 ThisBuild / githubWorkflowGeneratedCI += WorkflowJob(
   id = "codegen",
@@ -120,7 +116,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       }
     },
     libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit-scalacheck" % munitV,
+      "org.scalameta" %%% "munit"            % munitV,
+      "org.scalameta" %%% "munit-scalacheck" % munitScalacheckV,
       "org.typelevel" %%% "discipline-munit" % disciplineMunitV
     ).map(_ % Test),
     console / initialCommands := {

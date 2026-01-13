@@ -21,7 +21,6 @@
 
 package org.typelevel.idna4s.benchmarks.uts46
 
-import cats.syntax.all._
 import com.ibm.icu.text.Normalizer2
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._

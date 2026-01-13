@@ -39,6 +39,7 @@ private object DelimiterSyntax {
       using q: Quotes): Expr[Delimiter] =
     sc.value match {
       case Some(sc) if sc.parts.size === 1 =>
+        val _ = args
         val value: String = sc.parts.head
         Delimiter
           .fromString(value)

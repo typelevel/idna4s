@@ -24,13 +24,9 @@ import java.io.File
 import java.net.URI
 import java.net.URL
 import sbt._
-import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
 import scala.meta._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 import scala.util.matching._
 
 /**
@@ -715,7 +711,8 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
               iso10646Comment,
               uppercaseMapping,
               lowercaseMapping,
-              titlecaseMapping) =>
+              titlecaseMapping
+            ) =>
           parseNameAndRange(nameAndRange) match {
             case (rangeType, name) =>
               UnicodeDataRow(

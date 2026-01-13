@@ -26,70 +26,11 @@ import java.lang.Math
 import java.nio.IntBuffer
 import org.typelevel.idna4s.core._
 import scala.annotation.tailrec
-import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
 object Bootstring {
-
-  private val HalfIntMaxValue: Int = Int.MaxValue / 2
-
-  /**
-   * Calculate the a new size for an `IntBuffer` so that it can accept at ''least'' the given
-   * new capacity.
-   *
-   * If the buffer is already at or exceeding the required size, then the buffer's current size
-   * is returned. Otherwise attempt to double the buffer's size as long as that won't overflow.
-   * If we can not double it, add `neededSize - remaining` to the current capacity. In the
-   * unbelievable case where `buffer.remaining + neededSize > Int.MaxValue`, then yield an
-   * error.
-   */
-  @inline
-  private def calculateNewSize(buffer: IntBuffer, neededSize: Int): Int =
-    if (buffer.remaining >= neededSize) {
-      // This will be the branch most often hit by a wide margin.
-      buffer.capacity
-    } else if (buffer.capacity <= HalfIntMaxValue && buffer.capacity + buffer.remaining >= neededSize) {
-      // Double it
-      buffer.capacity * 2
-    } else if (neededSize.toLong - buffer.remaining.toLong <= Int.MaxValue.toLong) {
-      // I do not expect this branch will ever be executed under normal
-      // circumstances.
-      neededSize - buffer.remaining
-    } else {
-      // I do not expect this branch will ever be executed under normal
-      // circumstances.
-      throw BootstringException.UnableToResizeBufferException
-    }
-
-  /**
-   * Copy the contents of a given `IntBuffer` into a new `IntBuffer` with double capacity if the
-   * given `IntBuffer` is at capacity, unless doubling it would overflow, in that case attempt
-   * to just add the minimum needed allocation, if that is not possible then throw an error.
-   *
-   * The error case should only happen if there is a bug or someone is intentionally abusing the
-   * system. We need to handle it as it could be used to influence the result to potentially
-   * change a URI.
-   */
-  @inline
-  private def maybeResize(buffer: IntBuffer, neededSize: Int): IntBuffer =
-    if (buffer.remaining >= neededSize) {
-      // This will be the branch most often hit by a wide margin.
-      buffer
-    } else {
-      val pos: Int = buffer.position
-      val newSize: Int = calculateNewSize(buffer, neededSize)
-
-      // Shadow here is because `(buffer: IntBuffer).position(pos): Buffer`
-      // but we want `IntBuffer`, e.g. it is getting widened to the super
-      // type.
-      IntBuffer.allocate(newSize).put(buffer.array) match {
-        case buffer =>
-          buffer.position(pos)
-          buffer
-      }
-    }
 
   /**
    * Bootstring encode given `String`.
@@ -154,7 +95,7 @@ object Bootstring {
 
       // Insert the delimiter if there is at least one basic code point
       if (basicCodePointCount =!= 0) {
-        basicCodePoints.put(params.delimiter.codePointInt)
+        val _ = basicCodePoints.put(params.delimiter.codePointInt)
       }
 
       nonBasicCodePoints.foldLeft(
@@ -210,8 +151,6 @@ object Bootstring {
   )(
       value: String
   ): Either[BootstringException, String] = {
-    type Index = Int
-
     // Insert a value into an `IntBuffer` at an index. If the `IntBuffer`
     // already has a value at the index, shift all values from the index to
     // position to the right.
@@ -316,7 +255,7 @@ object Bootstring {
           }
       }
 
-    @tailrec
+    /*@tailrec
     def doOutput(
         basicCodePoints: List[Int],
         nonBasicCodePointMap: SortedMap[Index, Int],
@@ -343,7 +282,7 @@ object Bootstring {
                       s"Exhausted basic code points at index ${out.position()}, but we still have ${nonBasicCodePointMap.size} non basic code points to encode (next index is at ${pos}).")
                 }
           }
-      }
+      }*/
 
     try {
       // Split out the basic and non-basic sections of the encoded string.

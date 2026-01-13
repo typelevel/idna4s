@@ -25,11 +25,11 @@ import cats._
 import cats.collections.BitSet
 import cats.data._
 import cats.syntax.all._
-import java.lang.StringBuilder
 import org.typelevel.idna4s.core._
 import scala.annotation.tailrec
 import scala.collection.immutable.IntMap
 import scala.util.control.NoStackTrace
+import java.nio.IntBuffer
 
 object CodePointMapper extends GeneratedCodePointMapper {
 
@@ -42,8 +42,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
    *
    * Results are sentinel values or mapped code points.
    *
-   * -1 = DISALLOWED_STD3_VALID
-   * -2 = VALID
+   * -1 = DISALLOWED_STD3_VALID -2 = VALID
    *
    * Anything else is a mapped code point.
    */
@@ -98,43 +97,51 @@ object CodePointMapper extends GeneratedCodePointMapper {
       input: String): Either[MappingException, String] = {
     val len: Int = input.length
 
+    @inline
+    def put(acc: IntBuffer, value: Int): IntBuffer =
+      maybeResize(acc, 1).put(value)
+
     @tailrec
     def loop(
-        acc: StringBuilder,
-        errors: List[CodePointMappingException],
+        acc: IntBuffer,
+        errors: Chain[CodePointMappingException],
         index: Int): Either[MappingException, String] =
       if (index >= len || index < 0 /* Overflow check */ ) {
-        NonEmptyList
-          .fromList(errors)
+        NonEmptyChain
+          .fromChain(errors)
           .fold(
-            Right(acc.toString): Either[MappingException, String]
-          )(errors => Left(MappingException(errors, acc.toString)))
+            Right(new String(acc.array, 0, acc.position)): Either[MappingException, String]
+          )(errors => {
+            Left(MappingException(errors, new String(acc.array(), 0, acc.position)))
+          })
       } else {
         val value: Int = input.codePointAt(index)
         val nextIndex: Int = index + (if (value >= 0x10000) 2 else 1)
+        val outIndex: Int = acc.position
 
         // ASCII fast path
 
         if (value <= 0x7f) {
           asciiCodePointMap(value) match {
             case ASCII_VALID =>
-              loop(acc.appendCodePoint(value), errors, nextIndex)
+              loop(put(acc, value), errors, nextIndex)
             case ASCII_DISALLOWED_STD3_VALID =>
               // DISALLOWED_STD3_VALID
               if (useStd3ASCIIRules) {
                 loop(
-                  acc.appendCodePoint(ReplacementCharacter),
+                  put(acc, value),
                   CodePointMappingException(
                     index,
+                    outIndex,
                     "Disallowed code point in input.",
-                    CodePoint.unsafeFromInt(value)) :: errors,
+                    CodePoint.unsafeFromInt(value)) +: errors,
                   nextIndex
                 )
               } else {
-                loop(acc.appendCodePoint(value), errors, nextIndex)
+                loop(put(acc, value), errors, nextIndex)
               }
             case otherwise =>
-              loop(acc.appendCodePoint(otherwise), errors, nextIndex)
+              loop(put(acc, otherwise), errors, nextIndex)
           }
         } else {
 
@@ -145,27 +152,28 @@ object CodePointMapper extends GeneratedCodePointMapper {
 
           if (validAlways(value) || validNV8(value) || validXV8(value)) {
             // VALID
-            loop(acc.appendCodePoint(value), errors, nextIndex)
+            loop(put(acc, value), errors, nextIndex)
           } else if (mapped.contains(value)) {
             // MAPPED
-            loop(acc.appendCodePoint(mapped(value)), errors, nextIndex)
+            loop(put(acc, mapped(value)), errors, nextIndex)
           } else if (mappedMultiCodePoints.contains(value)) {
             // MAPPED MULTI
             loop(
               mappedMultiCodePoints(value).foldLeft(acc) {
                 case (acc, value) =>
-                  acc.appendCodePoint(value)
+                  put(acc, value)
               },
               errors,
               nextIndex)
           } else if (disallowed(value)) {
             // DISALLOWED
             loop(
-              acc.appendCodePoint(ReplacementCharacter),
+              put(acc, value),
               CodePointMappingException(
                 index,
+                outIndex,
                 "Disallowed code point in input.",
-                CodePoint.unsafeFromInt(value)) :: errors,
+                CodePoint.unsafeFromInt(value)) +: errors,
               nextIndex
             )
           } else if (ignored(value)) {
@@ -174,9 +182,9 @@ object CodePointMapper extends GeneratedCodePointMapper {
           } else if (deviationMapped.contains(value)) {
             // DEVIATION
             if (transitionalProcessing) {
-              loop(acc.appendCodePoint(deviationMapped(value)), errors, nextIndex)
+              loop(put(acc, deviationMapped(value)), errors, nextIndex)
             } else {
-              loop(acc.appendCodePoint(value), errors, nextIndex)
+              loop(put(acc, value), errors, nextIndex)
             }
           } else if (deviationMultiMapped.contains(value)) {
             // DEVIATION_MULTI
@@ -184,57 +192,60 @@ object CodePointMapper extends GeneratedCodePointMapper {
               loop(
                 deviationMultiMapped(value).foldLeft(acc) {
                   case (acc, value) =>
-                    acc.appendCodePoint(value)
+                    put(acc, value)
                 },
                 errors,
                 nextIndex)
             } else {
-              loop(acc.appendCodePoint(value), errors, nextIndex)
+              loop(put(acc, value), errors, nextIndex)
             }
           } else if (disallowedSTD3Valid(value)) {
             // DISALLOWED_STD3_VALID
             if (useStd3ASCIIRules) {
               loop(
-                acc.appendCodePoint(ReplacementCharacter),
+                put(acc, value),
                 CodePointMappingException(
                   index,
+                  outIndex,
                   "Disallowed code point in input.",
-                  CodePoint.unsafeFromInt(value)) :: errors,
+                  CodePoint.unsafeFromInt(value)) +: errors,
                 nextIndex
               )
             } else {
-              loop(acc.appendCodePoint(value), errors, nextIndex)
+              loop(put(acc, value), errors, nextIndex)
             }
           } else if (disallowedSTD3Mapped.contains(value)) {
             // DISALLOWED_STD3_MAPPED
             if (useStd3ASCIIRules) {
               loop(
-                acc.appendCodePoint(ReplacementCharacter),
+                put(acc, value),
                 CodePointMappingException(
                   index,
+                  outIndex,
                   "Disallowed code point in input.",
-                  CodePoint.unsafeFromInt(value)) :: errors,
+                  CodePoint.unsafeFromInt(value)) +: errors,
                 nextIndex
               )
             } else {
-              loop(acc.appendCodePoint(disallowedSTD3Mapped(value)), errors, nextIndex)
+              loop(put(acc, disallowedSTD3Mapped(value)), errors, nextIndex)
             }
           } else if (disallowedSTD3MultiMapped.contains(value)) {
             // DISALLOWED_STD3_MAPPED_MULTI
             if (useStd3ASCIIRules) {
               loop(
-                acc.appendCodePoint(ReplacementCharacter),
+                put(acc, value),
                 CodePointMappingException(
                   index,
+                  outIndex,
                   "Disallowed code point in input.",
-                  CodePoint.unsafeFromInt(value)) :: errors,
+                  CodePoint.unsafeFromInt(value)) +: errors,
                 nextIndex
               )
             } else {
               loop(
                 disallowedSTD3MultiMapped(value).foldLeft(acc) {
                   case (acc, value) =>
-                    acc.appendCodePoint(value)
+                    put(acc, value)
                 },
                 errors,
                 nextIndex)
@@ -244,7 +255,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
             if (transitionalProcessing) {
               loop(acc, errors, nextIndex)
             } else {
-              loop(acc.appendCodePoint(value), errors, nextIndex)
+              loop(put(acc, value), errors, nextIndex)
             }
           } else {
             // Should be impossible
@@ -255,7 +266,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
         }
       }
 
-    loop(new StringBuilder(len), Nil, 0)
+    loop(IntBuffer.allocate(len + len / 2), Chain.empty, 0)
   }
 
   /**
@@ -351,9 +362,20 @@ object CodePointMapper extends GeneratedCodePointMapper {
   sealed abstract class CodePointMappingException extends IDNAException with NoStackTrace {
 
     /**
-     * The index of the start of the Unicode code point in the input where the failure occurred.
+     * The index of the Unicode code point in the input where the failure occurred in the input
+     * string.
      */
-    def failureIndex: Int
+    def inputFailureIndex: Int
+
+    /**
+     * The index of Unicode code point in the partially mapped output string where the failure
+     * occurred.
+     *
+     * This can deviate from the [[#inputFailureIndex]] because mapping of code points earlier
+     * in the input might have resulted in what was 1 code point in the input becoming more than
+     * 1 code point in the output.
+     */
+    def outputFailureIndex: Int
 
     /**
      * A description of why the failure occurred.
@@ -371,21 +393,23 @@ object CodePointMapper extends GeneratedCodePointMapper {
       toString
 
     final override def toString: String =
-      s"CodePointMappingException(message = $message, failureIndex = $failureIndex, codePoint = $codePoint)"
+      s"CodePointMappingException(message = $message, inputFailureIndex = $inputFailureIndex, outputFailureIndex = $outputFailureIndex, codePoint = $codePoint)"
   }
 
   object CodePointMappingException {
     final private[this] case class CodePointMappingExceptionImpl(
-        override val failureIndex: Int,
+        override val inputFailureIndex: Int,
+        override val outputFailureIndex: Int,
         override val message: String,
         override val codePoint: CodePoint)
         extends CodePointMappingException
 
-    def apply(
-        failureIndex: Int,
+    private[idna4s] def apply(
+        inputFailureIndex: Int,
+        outputFailureIndex: Int,
         message: String,
         codePoint: CodePoint): CodePointMappingException =
-      CodePointMappingExceptionImpl(failureIndex, message, codePoint)
+      CodePointMappingExceptionImpl(inputFailureIndex, outputFailureIndex, message, codePoint)
 
     implicit val hashAndOrderForCodePointMappingException
         : Hash[CodePointMappingException] with Order[CodePointMappingException] =
@@ -393,15 +417,8 @@ object CodePointMapper extends GeneratedCodePointMapper {
         override def hash(x: CodePointMappingException): Int = x.hashCode
 
         override def compare(x: CodePointMappingException, y: CodePointMappingException): Int =
-          x.failureIndex.compare(y.failureIndex) match {
-            case 0 =>
-              x.message.compare(y.message) match {
-                case 0 =>
-                  x.codePoint.compare(y.codePoint)
-                case otherwise => otherwise
-              }
-            case otherwise => otherwise
-          }
+          (x.inputFailureIndex, x.outputFailureIndex, x.message, x.codePoint)
+            .compare((y.inputFailureIndex, y.outputFailureIndex, y.message, y.codePoint))
       }
 
     implicit val showForCodePointMappingException: Show[CodePointMappingException] =
@@ -420,32 +437,66 @@ object CodePointMapper extends GeneratedCodePointMapper {
      * Each [[CodePointMappingException]] describes the mapping failure of an independent code
      * point.
      */
-    def errors: NonEmptyList[CodePointMappingException]
+    def errors: NonEmptyChain[CodePointMappingException]
+
+    /**
+     * The input string, mapped as much as was possible. Code points which were disallowed in
+     * the input are left in place ''unchanged'', this makes this value unsafe to render in
+     * error messages or back to the user. [[#renderablePartiallyMappedInput]] should be used to
+     * render error messages to the user.
+     *
+     * This value is present because UTS-46 mandates that the algorithm continue to validity
+     * checks, even in the event of failure, and the validity checks must operate on this
+     * variant of the partially mapped input.
+     */
+    def unsafePartiallyMappedInput: String
 
     /**
      * The input string, mapped as much as was possible. Code points which failed replaced with
      * the Unicode replacement character � (0xFFFD). Returning this value on failure is mandated
      * by UTS-46.
      */
-    def partiallyMappedInput: String
+    def renderablePartiallyMappedInput: String
 
     final override def getMessage: String =
       toString
 
     final override def toString: String =
-      s"MappingException(errors = ${errors}, partiallyMappedInput = ${partiallyMappedInput})"
+      s"MappingException(errors = ${errors}, renderablePartiallyMappedInput = ${renderablePartiallyMappedInput}, unsafePartiallyMappedInputHash = ${unsafePartiallyMappedInput.hash})"
   }
 
   object MappingException {
     final private[this] case class MappingExceptionImpl(
-        override val errors: NonEmptyList[CodePointMappingException],
-        override val partiallyMappedInput: String)
-        extends MappingException
+        override val errors: NonEmptyChain[CodePointMappingException],
+        override val unsafePartiallyMappedInput: String
+    ) extends MappingException {
 
-    def apply(
-        errors: NonEmptyList[CodePointMappingException],
-        partiallyMappedInput: String): MappingException =
-      MappingExceptionImpl(errors, partiallyMappedInput)
+      // We derive this lazily to avoid having to always have 2x memory
+      // allocated. It's only needed when rendering errors.
+      final override lazy val renderablePartiallyMappedInput: String = {
+        val outBuffer: IntBuffer =
+          codePointsAsBuffer(unsafePartiallyMappedInput)
+        val len: Int = outBuffer.limit
+        errors.iterator.foreach { error =>
+          val _ = outBuffer.put(error.outputFailureIndex, ReplacementCharacter)
+        }
+
+        new String(outBuffer.array(), 0, len)
+      }
+
+      override def equals(that: Any): Boolean =
+        that match {
+          case that: MappingException =>
+            (this: MappingException) === that
+          case _ =>
+            false
+        }
+    }
+
+    private[idna4s] def apply(
+        errors: NonEmptyChain[CodePointMappingException],
+        unsafePartiallyMappedInput: String): MappingException =
+      MappingExceptionImpl(errors, unsafePartiallyMappedInput)
 
     implicit val hashAndOrderForMappingException
         : Hash[MappingException] with Order[MappingException] =
@@ -456,7 +507,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
         override def compare(x: MappingException, y: MappingException): Int =
           x.errors.compare(y.errors) match {
             case 0 =>
-              x.partiallyMappedInput.compare(y.partiallyMappedInput)
+              x.unsafePartiallyMappedInput.compare(y.unsafePartiallyMappedInput)
             case otherwise => otherwise
           }
       }
@@ -465,7 +516,7 @@ object CodePointMapper extends GeneratedCodePointMapper {
   /**
    * A constant for the Unicode replacement character �.
    */
-  final private val ReplacementCharacter =
+  final private[this] val ReplacementCharacter =
     0xfffd
 }
 

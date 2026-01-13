@@ -48,7 +48,7 @@ final class CodePointRangeTests extends ScalaCheckSuite {
           noOverlapping.foldLeft(acc) {
             case (acc, b) if a === b =>
               acc
-            case (acc, b @ (k2, _)) =>
+            case (_, b @ (k2, _)) =>
               (
                 (Prop(k1.overlapsWith(k2) === false) :| s"$k1.overlapsWith($k2) == false") &&
                   (Prop(k2.overlapsWith(k1) === false) :| s"$k2.overlapsWith($k1) == false")

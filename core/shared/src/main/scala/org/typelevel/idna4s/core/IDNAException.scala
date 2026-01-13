@@ -41,4 +41,15 @@ trait IDNAException extends RuntimeException
 object IDNAException {
   implicit val showForIDNAException: Show[IDNAException] =
     Show.fromToString
+
+  /**
+   * Exception used both in Bootstring and UTS-46 and which I doubt will ever be thrown.
+   */
+  final private[idna4s] class UnableToResizeBufferException extends IDNAException {
+    override val getMessage: String =
+      s"Can not resize buffer as it would exceed largest valid size ${Int.MaxValue}. What are you doing?"
+
+    final override def toString: String =
+      s"UnableToResizeBufferException(${getMessage})"
+  }
 }

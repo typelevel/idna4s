@@ -23,7 +23,7 @@ package org.typelevel.idna4s.tests.uts46
 
 import cats.data._
 import munit._
-import org.scalacheck.Prop
+import org.scalacheck.{Prop, Test}
 import org.scalacheck.Prop._
 import org.typelevel.idna4s.core._
 import org.typelevel.idna4s.core.uts46._
@@ -31,6 +31,9 @@ import org.typelevel.idna4s.scalacheck.all._
 import org.typelevel.idna4s.core.syntax.all._
 
 final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPlatformTests {
+
+  override def scalaCheckTestParameters: Test.Parameters =
+    super.scalaCheckTestParameters.withMinSuccessfulTests(100000)
 
   property("Any valid unicode code point should have a code point status") {
     // This is really just a check that we don't hit the AssertionError case.
@@ -44,17 +47,17 @@ final class CodePointMapperTests extends DisciplineSuite with CodePointMapperPla
   test("Known invalid input strings should fail") {
     import CodePointMapper._
     val input: String = "$invalid"
-    val unicodeReplacementCharacter: String = "\ufffd"
     assertEquals(
       CodePointMapper.mapCodePoints(input),
       Left(
         MappingException(
-          NonEmptyList.of(
+          NonEmptyChain.of(
             CodePointMappingException(
+              0,
               0,
               "Disallowed code point in input.",
               CodePoint.unsafeFromInt(input.codePointAt(0)))),
-          s"${unicodeReplacementCharacter}invalid"
+          input
         ))
     )
   }

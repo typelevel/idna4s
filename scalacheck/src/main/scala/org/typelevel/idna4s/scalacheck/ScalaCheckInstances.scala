@@ -96,8 +96,8 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
     )
 
   implicit final def cogenCodePointMappingException: Cogen[CodePointMappingException] =
-    Cogen[(Int, String, CodePoint)].contramap(value =>
-      (value.failureIndex, value.message, value.codePoint))
+    Cogen[(Int, Int, String, CodePoint)].contramap(value =>
+      (value.inputFailureIndex, value.outputFailureIndex, value.message, value.codePoint))
 
   /**
    * A generator which will generate an input String to `CodePointMapper#mapCodePoints` which
@@ -124,7 +124,7 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
 
   implicit final def cogenMappingException: Cogen[MappingException] =
     Cogen[(List[CodePointMappingException], String)].contramap(value =>
-      (value.errors.toList, value.partiallyMappedInput))
+      (value.errors.toList, value.unsafePartiallyMappedInput))
 
   implicit final def arbIDNA2008Status: Arbitrary[IDNA2008Status] =
     Arbitrary(Gen.oneOf(IDNA2008Status.NV8, IDNA2008Status.XV8))
