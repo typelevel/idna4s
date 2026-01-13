@@ -58,7 +58,7 @@ object CodeGen {
         e => throw collapseErrors(e),
         _.toList,
         { case (e, _) => throw collapseErrors(e) }
-        )
+      )
   }
 
   /**

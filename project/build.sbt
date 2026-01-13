@@ -1,7 +1,7 @@
 // scalafix:off
 
-ThisBuild / semanticdbEnabled          := true
-ThisBuild / semanticdbVersion          := scalafixSemanticdb.revision
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 scalacOptions -= "-Ywarn-unused-import"
 

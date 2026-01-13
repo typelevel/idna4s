@@ -96,7 +96,7 @@ lazy val root = tlCrossRootProject
   .settings(name := projectName)
 
 val codeGen = Def.task {
-  val cache = streams.value.cacheDirectory / "idna4s-codegen"
+  val cache    = streams.value.cacheDirectory / "idna4s-codegen"
   val inputDir = cache / "inputs"
   IO.createDirectory(inputDir)
   val versionFile = inputDir / "version.txt"
