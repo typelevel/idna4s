@@ -556,6 +556,7 @@ object UTS46CodeGen {
       // Note: Care must be taken in how this is constructed. There are
       // several valid encodings which create too deeply nested ASTs which
       // cause the ScalaMeta printer to crash.
+      @annotation.nowarn // Suppress erroneous unused warnings
       def asBitSetTerm(fa: SortedSet[CodePointRange]): Term = {
         val (ranges, singles): (List[Term], List[Term]) = fa.foldMap(value =>
           if (value.size < 10) {

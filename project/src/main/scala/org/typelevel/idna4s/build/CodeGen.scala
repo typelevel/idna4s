@@ -39,28 +39,27 @@ object CodeGen {
    * @param unicodeVersion
    *   the version of Unicode to use to generate the code.
    */
-  def generate(baseDir: File, unicodeVersion: String): Seq[File] =
-    UnicodeVersion.unsafeFromString(unicodeVersion) match {
-      case unicodeVersion =>
-        NonEmptyList
-          .of(
-            UTS46CodeGen.generate(baseDir, unicodeVersion),
-            UnicodeDataCodeGen.generate(baseDir, unicodeVersion),
-            DerivedJoiningTypeCodeGen.generate(baseDir, unicodeVersion),
-            DerivedBidiClassCodeGen.generate(baseDir, unicodeVersion)
-          )
-          .reduceMap(
-            _.fold(
-              e => Ior.leftNec[Throwable, NonEmptyList[File]](e),
-              f => Ior.right(NonEmptyList.one(f))
-            )
-          )
-          .fold(
-            e => throw collapseErrors(e),
-            _.toList,
-            { case (e, _) => throw collapseErrors(e) }
-          )
-    }
+  def generate(baseDir: File, unicodeVersion: String): Seq[File] = {
+    val parsedUnicodeVersion = UnicodeVersion.unsafeFromString(unicodeVersion)
+    NonEmptyList
+      .of(
+        UTS46CodeGen.generate(baseDir, parsedUnicodeVersion),
+        UnicodeDataCodeGen.generate(baseDir, parsedUnicodeVersion),
+        DerivedJoiningTypeCodeGen.generate(baseDir, parsedUnicodeVersion),
+        DerivedBidiClassCodeGen.generate(baseDir, parsedUnicodeVersion)
+      )
+      .reduceMap(
+        _.fold(
+          e => Ior.leftNec[Throwable, NonEmptyList[File]](e),
+          f => Ior.right(NonEmptyList.one(f))
+        )
+      )
+      .fold(
+        e => throw collapseErrors(e),
+        _.toList,
+        { case (e, _) => throw collapseErrors(e) }
+        )
+  }
 
   /**
    * Simple method to collapse all errors we encounter during code generation into a single

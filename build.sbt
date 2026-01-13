@@ -95,6 +95,26 @@ lazy val root = tlCrossRootProject
   )
   .settings(name := projectName)
 
+val codeGen = Def.task {
+  val cache = streams.value.cacheDirectory / "idna4s-codegen"
+  val inputDir = cache / "inputs"
+  IO.createDirectory(inputDir)
+  val versionFile = inputDir / "version.txt"
+
+  val lastUnicodeVersion = if (versionFile.exists()) IO.read(versionFile) else ""
+  if (lastUnicodeVersion != UnicodeVersion)
+    IO.write(versionFile, UnicodeVersion)
+
+  val outputDir = (Compile / sourceManaged).value
+
+  val genCacheAware = FileFunction.cached(cache / "outputs") { _ =>
+    streams.value.log.info(s"Generating code for unicode $UnicodeVersion")
+    CodeGen.generate(outputDir, UnicodeVersion).toSet
+  }
+
+  genCacheAware(Set(versionFile)).toSeq
+}
+
 lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
@@ -131,13 +151,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       ).map(value => s"import ${value}${wildcardImport.value}").mkString("\n")
     },
     consoleQuick / initialCommands := "",
-    Compile / sourceGenerators ++= List(
-      (Compile / sourceManaged)
-        .map(
-          CodeGen.generate(_, UnicodeVersion)
-        )
-        .taskValue
-    )
+    Compile / sourceGenerators += codeGen.taskValue
   )
 
 lazy val scalacheck = crossProject(JVMPlatform, JSPlatform, NativePlatform)
