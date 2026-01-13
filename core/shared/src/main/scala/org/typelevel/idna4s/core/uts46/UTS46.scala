@@ -555,7 +555,7 @@ object UTS46 extends GeneratedUnicodeData with GeneratedJoiningType with Generat
 
   private final val ZERO_WIDTH_JOINER = '\u200d'
 
-  private final val ZERO_WIDTH_JOINER_INT = ZERO_WIDTH_NON_JOINER_INT.toInt
+  private final val ZERO_WIDTH_JOINER_INT = ZERO_WIDTH_JOINER.toInt
 
   private final case class BidiNumberTypeError(value: Boolean) extends AnyVal
 
