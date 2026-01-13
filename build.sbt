@@ -109,7 +109,7 @@ val codeGen = Def.task {
   val outputDir = (Compile / sourceManaged).value
 
   val genCacheAware = FileFunction.cached(cache / "outputs") { _ =>
-    log.info(s"Generating code for unicode $UnicodeVersion")
+    log.info(s"Generating code for unicode $UnicodeVersion to $outputDir")
     CodeGen.generate(outputDir, UnicodeVersion).toSet
   }
 
