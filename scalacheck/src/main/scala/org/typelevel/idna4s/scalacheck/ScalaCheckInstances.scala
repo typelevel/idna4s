@@ -204,11 +204,22 @@ private[scalacheck] trait ScalaCheckInstances extends Serializable {
         useStd3ASCIIRules <- Arbitrary.arbitrary[Boolean]
         transitionalProcessing <- Arbitrary.arbitrary[Boolean]
         verifyDnsLength <- Arbitrary.arbitrary[Boolean]
-      } yield UTS46Config(checkHyphens, checkBidi, checkJoiners, useStd3ASCIIRules, transitionalProcessing, verifyDnsLength)
+      } yield UTS46Config(
+        checkHyphens,
+        checkBidi,
+        checkJoiners,
+        useStd3ASCIIRules,
+        transitionalProcessing,
+        verifyDnsLength)
     )
 
   implicit final def cogenUTS46Config: Cogen[UTS46Config] =
     Cogen[(Boolean, Boolean, Boolean, Boolean, Boolean, Boolean)].contramap(value =>
-      (value.checkHyphens, value.checkBidi, value.checkJoiners, value.useStd3ASCIIRules, value.transitionalProcessing, value.verifyDnsLength)
-    )
+      (
+        value.checkHyphens,
+        value.checkBidi,
+        value.checkJoiners,
+        value.useStd3ASCIIRules,
+        value.transitionalProcessing,
+        value.verifyDnsLength))
 }
