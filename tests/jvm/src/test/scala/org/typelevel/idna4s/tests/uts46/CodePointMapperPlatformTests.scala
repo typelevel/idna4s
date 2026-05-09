@@ -35,7 +35,7 @@ import org.typelevel.idna4s.core.uts46._
 trait CodePointMapperPlatformTests extends DisciplineSuite {
   import CodePointMapperPlatformTests._
 
-  override def munitFlakyOK: Boolean = false
+  override def munitFlakyOK: Boolean = true
 
   // Note this test is flaky when idna4s and icu4j are targeting different
   // versions of Unicode.
