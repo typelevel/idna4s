@@ -14,7 +14,7 @@ val catsV            = "2.13.0"
 val disciplineMunitV = "2.0.0"
 val icu4jV           = "73.2"
 val literallyV       = "1.2.0"
-val munitV           = "1.2.4"
+val munitV           = "1.3.0"
 val munitScalacheckV = "1.3.0"
 val scalacheckV      = "1.19.0"
 
