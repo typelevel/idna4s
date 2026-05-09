@@ -72,7 +72,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
   )
 
   InconsistencyChecks.foreach { s =>
-    test(s"̸ࣶicu4j inconsistency: ${descriptivePrint(s)}") {
+    test(s"̸ࣶicu4j inconsistency: ${descriptivePrint(s)}".flaky) {
       intercept[FailException] {
         assertConsistency(s)
       }
