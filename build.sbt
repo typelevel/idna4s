@@ -14,8 +14,8 @@ val catsV            = "2.13.0"
 val disciplineMunitV = "2.0.0"
 val icu4jV           = "78.2"
 val literallyV       = "1.2.0"
-val munitV           = "1.2.1"
-val munitScalacheckV = "1.2.0"
+val munitV           = "1.2.4"
+val munitScalacheckV = "1.3.0"
 val scalacheckV      = "1.19.0"
 
 ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)

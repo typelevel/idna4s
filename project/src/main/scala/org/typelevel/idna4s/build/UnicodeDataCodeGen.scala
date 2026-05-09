@@ -713,7 +713,8 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
               iso10646Comment,
               uppercaseMapping,
               lowercaseMapping,
-              titlecaseMapping) =>
+              titlecaseMapping
+            ) =>
           parseNameAndRange(nameAndRange) match {
             case (rangeType, name) =>
               UnicodeDataRow(
