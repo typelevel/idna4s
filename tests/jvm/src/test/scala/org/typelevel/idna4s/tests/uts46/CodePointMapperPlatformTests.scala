@@ -68,7 +68,7 @@ trait CodePointMapperPlatformTests extends DisciplineSuite {
 
   val InconsistencyChecks: List[String] = List(
     "\u0345\u20e5", // NFC normalization reorders this, resulting in inconsistency with icu4j
-    "\u0345\u0c3c"  // Behavior is different between Java 17 and 25
+    "\u0345\u0c3c" // Behavior is different between Java 17 and 25
   )
 
   InconsistencyChecks.foreach { s =>
