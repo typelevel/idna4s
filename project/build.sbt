@@ -1,10 +1,12 @@
 // scalafix:off
 
-ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
-ThisBuild / semanticdbEnabled          := true
-ThisBuild / semanticdbVersion          := scalafixSemanticdb.revision
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
-scalacOptions -= "-Ywarn-unused-import"
+scalacOptions -= "-Wconf:cat=unused-nowarn:s"
+scalacOptions -= "-Ywarn-unused:_,-nowarn,-privates"
+
+scalafixConfig := Some(file("project/.scalafix.conf"))
 
 // Extracted from sbt-typelevel's configuration. We don't want all of
 // sbt-typelevel for the meta project build, but headers would be nice.
