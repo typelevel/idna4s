@@ -1,7 +1,7 @@
 // scalafix:off
 
 ThisBuild / semanticdbEnabled := true
-ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / semanticdbVersion := "4.17.0"
 
 scalacOptions -= "-Wconf:cat=unused-nowarn:s"
 scalacOptions -= "-Ywarn-unused:_,-nowarn,-privates"
