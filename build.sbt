@@ -1,6 +1,6 @@
 import org.typelevel.idna4s.build._
 
-ThisBuild / tlBaseVersion := "0.1"
+ThisBuild / tlBaseVersion := "0.2"
 
 val UnicodeVersion: String = "17.0.0"
 

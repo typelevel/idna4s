@@ -71,7 +71,6 @@ object UnicodeDataCodeGen {
 package org.typelevel.idna4s.core.uts46
 
 import cats.collections.BitSet
-import scala.collection.immutable.IntMap
 
 private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         Type.Name(BaseTypeName),
@@ -79,7 +78,6 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
         Seq.empty)} {
   override final protected lazy val combiningMarkCodePoints: BitSet = $combiningMarkCodePointsRHS
 
-  ..${bidirectionalCategoryDefs(unicodeData)}
   ..${viramaCanonicalCombiningClassCodePointsDefs(unicodeData)}
 }"""
   }
@@ -947,43 +945,6 @@ private[uts46] trait ${Type.Name(GeneratedTypeName)} extends ${Init(
           q"List(..$rangeTerms).foldLeft($singlesTerm){ case (acc, value) => BitSet.fromScalaRange(value) | acc}.compact"
         }
     }
-
-  /**
-   * Create the defs needed for the bidirectional information about Unicode code points.
-   */
-  private def bidirectionalCategoryDefs(
-      unicodeData: UnicodeData[UnicodeCodePointInfomation]): List[Defn] = {
-    val categoryData: UnicodeData[BidirectionalCategory] =
-      unicodeData.mapValues(
-        _.bidirectionalCategory
-      )
-    val (singles, ranges): (
-        SortedMap[CodePointRange.Single, BidirectionalCategory],
-        SortedMap[CodePointRange, BidirectionalCategory]) = categoryData.partitioned
-    val rangeTerms: List[Term] = ranges.toList.map {
-      case (k, v) =>
-        q"(Range.inclusive(${Lit.Int(k.lower.value)}, ${Lit.Int(k.upper.value)}), ${Lit.String(v.value)})"
-    }
-    val singleTerms: List[Term] =
-      singles.toList.map {
-        case (k, v) =>
-          q"(${Lit.Int(k.lower.value)}, ${Lit.String(v.value)})"
-      }
-    val baseMap: Term =
-      q"IntMap(..$singleTerms)"
-
-    List(
-      q"""private final def bidirectionalCategoryBaseMap: IntMap[String] = $baseMap""",
-      q"""override final protected lazy val bidirectionalCategoryMap: IntMap[String] =
-             List[(Range, String)](..$rangeTerms).foldLeft(bidirectionalCategoryBaseMap){
-              case (k, (range, result)) =>
-                range.foldLeft(k){
-                  case (k, cp) =>
-                    k.updated(cp, result)
-                }
-          }"""
-    )
-  }
 
   /**
    * Extract out the Unicode code points which have a canonical combining class of Virama. This
