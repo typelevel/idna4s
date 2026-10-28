@@ -6,7 +6,7 @@ val UnicodeVersion: String = "17.0.0"
 
 val Scala212                    = "2.12.21"
 val Scala213                    = "2.13.18"
-val Scala3                      = "3.3.7"
+val Scala3                      = "3.3.9"
 def DefaultScalaVersion: String = Scala213
 
 val catsCollectionsV = "0.9.10"
